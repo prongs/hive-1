@@ -18,24 +18,13 @@
 
 package org.apache.hive.service.cli.session;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.common.cli.HiveFileProcessor;
 import org.apache.hadoop.hive.common.cli.IHiveFileProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
@@ -52,27 +41,13 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hive.common.util.HiveVersionInfo;
 import org.apache.hive.service.auth.HiveAuthFactory;
-import org.apache.hive.service.cli.FetchOrientation;
-import org.apache.hive.service.cli.FetchType;
-import org.apache.hive.service.cli.GetInfoType;
-import org.apache.hive.service.cli.GetInfoValue;
-import org.apache.hive.service.cli.HiveSQLException;
-import org.apache.hive.service.cli.OperationHandle;
-import org.apache.hive.service.cli.RowSet;
-import org.apache.hive.service.cli.SessionHandle;
-import org.apache.hive.service.cli.TableSchema;
-import org.apache.hive.service.cli.operation.ExecuteStatementOperation;
-import org.apache.hive.service.cli.operation.GetCatalogsOperation;
-import org.apache.hive.service.cli.operation.GetColumnsOperation;
-import org.apache.hive.service.cli.operation.GetFunctionsOperation;
-import org.apache.hive.service.cli.operation.GetSchemasOperation;
-import org.apache.hive.service.cli.operation.GetTableTypesOperation;
-import org.apache.hive.service.cli.operation.GetTypeInfoOperation;
-import org.apache.hive.service.cli.operation.MetadataOperation;
-import org.apache.hive.service.cli.operation.Operation;
-import org.apache.hive.service.cli.operation.OperationManager;
+import org.apache.hive.service.cli.*;
+import org.apache.hive.service.cli.operation.*;
 import org.apache.hive.service.cli.thrift.TProtocolVersion;
 import org.apache.hive.service.server.ThreadWithGarbageCleanup;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HiveSession
@@ -111,12 +86,12 @@ public class HiveSessionImpl implements HiveSession {
   private volatile long lastAccessTime;
   private volatile long lastIdleTime;
 
-  public HiveSessionImpl(TProtocolVersion protocol, String username, String password,
+  public HiveSessionImpl(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
       HiveConf serverhiveConf, String ipAddress) {
     this.username = username;
     this.password = password;
     creationTime = System.currentTimeMillis();
-    this.sessionHandle = new SessionHandle(protocol);
+    this.sessionHandle = sessionHandle;
     this.hiveConf = new HiveConf(serverhiveConf);
     this.ipAddress = ipAddress;
 
@@ -138,6 +113,12 @@ public class HiveSessionImpl implements HiveSession {
         FetchFormatter.ThriftFormatter.class.getName());
     hiveConf.setInt(ListSinkOperator.OUTPUT_PROTOCOL, protocol.getValue());
   }
+
+  public HiveSessionImpl(TProtocolVersion protocol, String username, String password,
+    HiveConf serverhiveConf, String ipAddress) {
+    this(new SessionHandle(protocol), protocol, username, password, serverhiveConf, ipAddress);
+  }
+
 
   @Override
   /**
