@@ -74,7 +74,6 @@ import org.apache.hive.service.cli.operation.OperationManager;
 import org.apache.hive.service.cli.thrift.TProtocolVersion;
 import org.apache.hive.service.server.ThreadWithGarbageCleanup;
 
-
 /**
  * HiveSession
  *

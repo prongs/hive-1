@@ -47,7 +47,6 @@ import org.apache.hive.service.cli.session.SessionManager;
 import org.apache.hive.service.cli.thrift.TProtocolVersion;
 import org.apache.hive.service.server.HiveServer2;
 
-
 /**
  * CLIService.
  *
