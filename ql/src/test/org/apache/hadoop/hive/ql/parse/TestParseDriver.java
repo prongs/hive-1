@@ -98,7 +98,6 @@ public class TestParseDriver {
 
     ASTNode tree = parseDriver.parseExpression("case when field1 = 1 then sum(field3 + field4) when field1 != 2 then " +
       "sum(field3-field4) else sum(field3 * field4) end");
-    System.out.println(tree);
     assertEquals(tree.getChildCount(), 6);
     assertEquals(tree.getChild(0).getType(), HiveParser.KW_WHEN);
     assertEquals(tree.getChild(1).getType(), HiveParser.EQUAL);
