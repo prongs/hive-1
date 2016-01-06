@@ -3696,258 +3696,6 @@ class TOpenSessionResp:
   def __ne__(self, other):
     return not (self == other)
 
-class TRestoreSessionReq:
-  """
-  Attributes:
-   - client_protocol
-   - sessionHandle
-   - username
-   - password
-   - configuration
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 'client_protocol', None,     7, ), # 1
-    (2, TType.STRUCT, 'sessionHandle', (TSessionHandle, TSessionHandle.thrift_spec), None, ), # 2
-    (3, TType.STRING, 'username', None, None, ), # 3
-    (4, TType.STRING, 'password', None, None, ), # 4
-    (5, TType.MAP, 'configuration', (TType.STRING,None,TType.STRING,None), None, ), # 5
-  )
-
-  def __init__(self, client_protocol=thrift_spec[1][4], sessionHandle=None, username=None, password=None, configuration=None,):
-    self.client_protocol = client_protocol
-    self.sessionHandle = sessionHandle
-    self.username = username
-    self.password = password
-    self.configuration = configuration
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.I32:
-          self.client_protocol = iprot.readI32()
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.STRUCT:
-          self.sessionHandle = TSessionHandle()
-          self.sessionHandle.read(iprot)
-        else:
-          iprot.skip(ftype)
-      elif fid == 3:
-        if ftype == TType.STRING:
-          self.username = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 4:
-        if ftype == TType.STRING:
-          self.password = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 5:
-        if ftype == TType.MAP:
-          self.configuration = {}
-          (_ktype144, _vtype145, _size143 ) = iprot.readMapBegin()
-          for _i147 in xrange(_size143):
-            _key148 = iprot.readString()
-            _val149 = iprot.readString()
-            self.configuration[_key148] = _val149
-          iprot.readMapEnd()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('TRestoreSessionReq')
-    if self.client_protocol is not None:
-      oprot.writeFieldBegin('client_protocol', TType.I32, 1)
-      oprot.writeI32(self.client_protocol)
-      oprot.writeFieldEnd()
-    if self.sessionHandle is not None:
-      oprot.writeFieldBegin('sessionHandle', TType.STRUCT, 2)
-      self.sessionHandle.write(oprot)
-      oprot.writeFieldEnd()
-    if self.username is not None:
-      oprot.writeFieldBegin('username', TType.STRING, 3)
-      oprot.writeString(self.username)
-      oprot.writeFieldEnd()
-    if self.password is not None:
-      oprot.writeFieldBegin('password', TType.STRING, 4)
-      oprot.writeString(self.password)
-      oprot.writeFieldEnd()
-    if self.configuration is not None:
-      oprot.writeFieldBegin('configuration', TType.MAP, 5)
-      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.configuration))
-      for kiter150,viter151 in self.configuration.items():
-        oprot.writeString(kiter150)
-        oprot.writeString(viter151)
-      oprot.writeMapEnd()
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    if self.client_protocol is None:
-      raise TProtocol.TProtocolException(message='Required field client_protocol is unset!')
-    if self.sessionHandle is None:
-      raise TProtocol.TProtocolException(message='Required field sessionHandle is unset!')
-    return
-
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.client_protocol)
-    value = (value * 31) ^ hash(self.sessionHandle)
-    value = (value * 31) ^ hash(self.username)
-    value = (value * 31) ^ hash(self.password)
-    value = (value * 31) ^ hash(self.configuration)
-    return value
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class TRestoreSessionResp:
-  """
-  Attributes:
-   - status
-   - serverProtocolVersion
-   - sessionHandle
-   - configuration
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.STRUCT, 'status', (TStatus, TStatus.thrift_spec), None, ), # 1
-    (2, TType.I32, 'serverProtocolVersion', None,     7, ), # 2
-    (3, TType.STRUCT, 'sessionHandle', (TSessionHandle, TSessionHandle.thrift_spec), None, ), # 3
-    (4, TType.MAP, 'configuration', (TType.STRING,None,TType.STRING,None), None, ), # 4
-  )
-
-  def __init__(self, status=None, serverProtocolVersion=thrift_spec[2][4], sessionHandle=None, configuration=None,):
-    self.status = status
-    self.serverProtocolVersion = serverProtocolVersion
-    self.sessionHandle = sessionHandle
-    self.configuration = configuration
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.STRUCT:
-          self.status = TStatus()
-          self.status.read(iprot)
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.I32:
-          self.serverProtocolVersion = iprot.readI32()
-        else:
-          iprot.skip(ftype)
-      elif fid == 3:
-        if ftype == TType.STRUCT:
-          self.sessionHandle = TSessionHandle()
-          self.sessionHandle.read(iprot)
-        else:
-          iprot.skip(ftype)
-      elif fid == 4:
-        if ftype == TType.MAP:
-          self.configuration = {}
-          (_ktype153, _vtype154, _size152 ) = iprot.readMapBegin()
-          for _i156 in xrange(_size152):
-            _key157 = iprot.readString()
-            _val158 = iprot.readString()
-            self.configuration[_key157] = _val158
-          iprot.readMapEnd()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('TRestoreSessionResp')
-    if self.status is not None:
-      oprot.writeFieldBegin('status', TType.STRUCT, 1)
-      self.status.write(oprot)
-      oprot.writeFieldEnd()
-    if self.serverProtocolVersion is not None:
-      oprot.writeFieldBegin('serverProtocolVersion', TType.I32, 2)
-      oprot.writeI32(self.serverProtocolVersion)
-      oprot.writeFieldEnd()
-    if self.sessionHandle is not None:
-      oprot.writeFieldBegin('sessionHandle', TType.STRUCT, 3)
-      self.sessionHandle.write(oprot)
-      oprot.writeFieldEnd()
-    if self.configuration is not None:
-      oprot.writeFieldBegin('configuration', TType.MAP, 4)
-      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.configuration))
-      for kiter159,viter160 in self.configuration.items():
-        oprot.writeString(kiter159)
-        oprot.writeString(viter160)
-      oprot.writeMapEnd()
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    if self.status is None:
-      raise TProtocol.TProtocolException(message='Required field status is unset!')
-    if self.serverProtocolVersion is None:
-      raise TProtocol.TProtocolException(message='Required field serverProtocolVersion is unset!')
-    return
-
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.status)
-    value = (value * 31) ^ hash(self.serverProtocolVersion)
-    value = (value * 31) ^ hash(self.sessionHandle)
-    value = (value * 31) ^ hash(self.configuration)
-    return value
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class TCloseSessionReq:
   """
   Attributes:
@@ -4427,11 +4175,11 @@ class TExecuteStatementReq:
       elif fid == 3:
         if ftype == TType.MAP:
           self.confOverlay = {}
-          (_ktype162, _vtype163, _size161 ) = iprot.readMapBegin()
-          for _i165 in xrange(_size161):
-            _key166 = iprot.readString()
-            _val167 = iprot.readString()
-            self.confOverlay[_key166] = _val167
+          (_ktype144, _vtype145, _size143 ) = iprot.readMapBegin()
+          for _i147 in xrange(_size143):
+            _key148 = iprot.readString()
+            _val149 = iprot.readString()
+            self.confOverlay[_key148] = _val149
           iprot.readMapEnd()
         else:
           iprot.skip(ftype)
@@ -4461,9 +4209,9 @@ class TExecuteStatementReq:
     if self.confOverlay is not None:
       oprot.writeFieldBegin('confOverlay', TType.MAP, 3)
       oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.confOverlay))
-      for kiter168,viter169 in self.confOverlay.items():
-        oprot.writeString(kiter168)
-        oprot.writeString(viter169)
+      for kiter150,viter151 in self.confOverlay.items():
+        oprot.writeString(kiter150)
+        oprot.writeString(viter151)
       oprot.writeMapEnd()
       oprot.writeFieldEnd()
     if self.runAsync is not None:
@@ -5117,10 +4865,10 @@ class TGetTablesReq:
       elif fid == 5:
         if ftype == TType.LIST:
           self.tableTypes = []
-          (_etype173, _size170) = iprot.readListBegin()
-          for _i174 in xrange(_size170):
-            _elem175 = iprot.readString()
-            self.tableTypes.append(_elem175)
+          (_etype155, _size152) = iprot.readListBegin()
+          for _i156 in xrange(_size152):
+            _elem157 = iprot.readString()
+            self.tableTypes.append(_elem157)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -5153,8 +4901,8 @@ class TGetTablesReq:
     if self.tableTypes is not None:
       oprot.writeFieldBegin('tableTypes', TType.LIST, 5)
       oprot.writeListBegin(TType.STRING, len(self.tableTypes))
-      for iter176 in self.tableTypes:
-        oprot.writeString(iter176)
+      for iter158 in self.tableTypes:
+        oprot.writeString(iter158)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

@@ -26,21 +26,6 @@ module TCLIService
       raise ::Thrift::ApplicationException.new(::Thrift::ApplicationException::MISSING_RESULT, 'OpenSession failed: unknown result')
     end
 
-    def RestoreSession(req)
-      send_RestoreSession(req)
-      return recv_RestoreSession()
-    end
-
-    def send_RestoreSession(req)
-      send_message('RestoreSession', RestoreSession_args, :req => req)
-    end
-
-    def recv_RestoreSession()
-      result = receive_message(RestoreSession_result)
-      return result.success unless result.success.nil?
-      raise ::Thrift::ApplicationException.new(::Thrift::ApplicationException::MISSING_RESULT, 'RestoreSession failed: unknown result')
-    end
-
     def CloseSession(req)
       send_CloseSession(req)
       return recv_CloseSession()
@@ -323,13 +308,6 @@ module TCLIService
       write_result(result, oprot, 'OpenSession', seqid)
     end
 
-    def process_RestoreSession(seqid, iprot, oprot)
-      args = read_args(iprot, RestoreSession_args)
-      result = RestoreSession_result.new()
-      result.success = @handler.RestoreSession(args.req)
-      write_result(result, oprot, 'RestoreSession', seqid)
-    end
-
     def process_CloseSession(seqid, iprot, oprot)
       args = read_args(iprot, CloseSession_args)
       result = CloseSession_result.new()
@@ -482,38 +460,6 @@ module TCLIService
 
     FIELDS = {
       SUCCESS => {:type => ::Thrift::Types::STRUCT, :name => 'success', :class => ::TOpenSessionResp}
-    }
-
-    def struct_fields; FIELDS; end
-
-    def validate
-    end
-
-    ::Thrift::Struct.generate_accessors self
-  end
-
-  class RestoreSession_args
-    include ::Thrift::Struct, ::Thrift::Struct_Union
-    REQ = 1
-
-    FIELDS = {
-      REQ => {:type => ::Thrift::Types::STRUCT, :name => 'req', :class => ::TRestoreSessionReq}
-    }
-
-    def struct_fields; FIELDS; end
-
-    def validate
-    end
-
-    ::Thrift::Struct.generate_accessors self
-  end
-
-  class RestoreSession_result
-    include ::Thrift::Struct, ::Thrift::Struct_Union
-    SUCCESS = 0
-
-    FIELDS = {
-      SUCCESS => {:type => ::Thrift::Types::STRUCT, :name => 'success', :class => ::TRestoreSessionResp}
     }
 
     def struct_fields; FIELDS; end
