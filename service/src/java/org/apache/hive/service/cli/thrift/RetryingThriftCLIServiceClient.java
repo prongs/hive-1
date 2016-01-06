@@ -18,17 +18,20 @@
 
 package org.apache.hive.service.cli.thrift;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.hadoop.conf.Configuration;
+import java.lang.reflect.*;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import javax.security.sasl.SaslException;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.auth.HiveAuthFactory;
-import org.apache.hive.service.auth.KerberosSaslHelper;
 import org.apache.hive.service.auth.PlainSaslHelper;
 import org.apache.hive.service.cli.*;
 import org.apache.thrift.TApplicationException;
-import org.apache.thrift.TException;
-
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolException;
@@ -36,13 +39,8 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
-import javax.security.sasl.SaslException;
-import java.lang.reflect.*;
-import java.net.SocketException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RetryingThriftCLIServiceClient. Creates a proxy for a CLIServiceClient
@@ -90,6 +88,12 @@ public class RetryingThriftCLIServiceClient implements InvocationHandler {
     public SessionHandle openSession(String username, String password, Map<String, String> configuration)
       throws HiveSQLException {
       return cliService.openSession(username, password, configuration);
+    }
+
+    @Override
+    public SessionHandle restoreSession(SessionHandle sessionHandle, String username, String password,
+      Map<String, String> configuration) throws HiveSQLException{
+      return cliService.restoreSession(sessionHandle, username, password, configuration);
     }
 
     @Override

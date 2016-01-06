@@ -27,6 +27,11 @@ class TCLIServiceHandler : virtual public TCLIServiceIf {
     printf("OpenSession\n");
   }
 
+  void RestoreSession(TRestoreSessionResp& _return, const TRestoreSessionReq& req) {
+    // Your implementation goes here
+    printf("RestoreSession\n");
+  }
+
   void CloseSession(TCloseSessionResp& _return, const TCloseSessionReq& req) {
     // Your implementation goes here
     printf("CloseSession\n");

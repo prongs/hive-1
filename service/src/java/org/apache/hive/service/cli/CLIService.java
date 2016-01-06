@@ -203,7 +203,7 @@ public class CLIService extends CompositeService implements ICLIService {
   }
 
   /**
-   * Used to restore session in Grill
+   * Used to restore session
    */
   public SessionHandle restoreSession(SessionHandle sessionHandle, String username, String password,
     Map<String, String> configuration)

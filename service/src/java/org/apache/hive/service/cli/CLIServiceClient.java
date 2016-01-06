@@ -35,6 +35,11 @@ public abstract class CLIServiceClient implements ICLIService {
     return openSession(username, password, Collections.<String, String>emptyMap());
   }
 
+  public SessionHandle restoreSession(SessionHandle handle, String username, String password)
+    throws HiveSQLException {
+    return restoreSession(handle, username, password, Collections.<String, String>emptyMap());
+  }
+
   @Override
   public RowSet fetchResults(OperationHandle opHandle) throws HiveSQLException {
     // TODO: provide STATIC default value

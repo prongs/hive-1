@@ -255,6 +255,10 @@ class TOpenSessionReq;
 
 class TOpenSessionResp;
 
+class TRestoreSessionReq;
+
+class TRestoreSessionResp;
+
 class TCloseSessionReq;
 
 class TCloseSessionResp;
@@ -2225,6 +2229,150 @@ class TOpenSessionResp {
 void swap(TOpenSessionResp &a, TOpenSessionResp &b);
 
 inline std::ostream& operator<<(std::ostream& out, const TOpenSessionResp& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _TRestoreSessionReq__isset {
+  _TRestoreSessionReq__isset() : username(false), password(false), configuration(false) {}
+  bool username :1;
+  bool password :1;
+  bool configuration :1;
+} _TRestoreSessionReq__isset;
+
+class TRestoreSessionReq {
+ public:
+
+  TRestoreSessionReq(const TRestoreSessionReq&);
+  TRestoreSessionReq& operator=(const TRestoreSessionReq&);
+  TRestoreSessionReq() : client_protocol((TProtocolVersion::type)7), username(), password() {
+    client_protocol = (TProtocolVersion::type)7;
+
+  }
+
+  virtual ~TRestoreSessionReq() throw();
+  TProtocolVersion::type client_protocol;
+  TSessionHandle sessionHandle;
+  std::string username;
+  std::string password;
+  std::map<std::string, std::string>  configuration;
+
+  _TRestoreSessionReq__isset __isset;
+
+  void __set_client_protocol(const TProtocolVersion::type val);
+
+  void __set_sessionHandle(const TSessionHandle& val);
+
+  void __set_username(const std::string& val);
+
+  void __set_password(const std::string& val);
+
+  void __set_configuration(const std::map<std::string, std::string> & val);
+
+  bool operator == (const TRestoreSessionReq & rhs) const
+  {
+    if (!(client_protocol == rhs.client_protocol))
+      return false;
+    if (!(sessionHandle == rhs.sessionHandle))
+      return false;
+    if (__isset.username != rhs.__isset.username)
+      return false;
+    else if (__isset.username && !(username == rhs.username))
+      return false;
+    if (__isset.password != rhs.__isset.password)
+      return false;
+    else if (__isset.password && !(password == rhs.password))
+      return false;
+    if (__isset.configuration != rhs.__isset.configuration)
+      return false;
+    else if (__isset.configuration && !(configuration == rhs.configuration))
+      return false;
+    return true;
+  }
+  bool operator != (const TRestoreSessionReq &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const TRestoreSessionReq & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(TRestoreSessionReq &a, TRestoreSessionReq &b);
+
+inline std::ostream& operator<<(std::ostream& out, const TRestoreSessionReq& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _TRestoreSessionResp__isset {
+  _TRestoreSessionResp__isset() : sessionHandle(false), configuration(false) {}
+  bool sessionHandle :1;
+  bool configuration :1;
+} _TRestoreSessionResp__isset;
+
+class TRestoreSessionResp {
+ public:
+
+  TRestoreSessionResp(const TRestoreSessionResp&);
+  TRestoreSessionResp& operator=(const TRestoreSessionResp&);
+  TRestoreSessionResp() : serverProtocolVersion((TProtocolVersion::type)7) {
+    serverProtocolVersion = (TProtocolVersion::type)7;
+
+  }
+
+  virtual ~TRestoreSessionResp() throw();
+  TStatus status;
+  TProtocolVersion::type serverProtocolVersion;
+  TSessionHandle sessionHandle;
+  std::map<std::string, std::string>  configuration;
+
+  _TRestoreSessionResp__isset __isset;
+
+  void __set_status(const TStatus& val);
+
+  void __set_serverProtocolVersion(const TProtocolVersion::type val);
+
+  void __set_sessionHandle(const TSessionHandle& val);
+
+  void __set_configuration(const std::map<std::string, std::string> & val);
+
+  bool operator == (const TRestoreSessionResp & rhs) const
+  {
+    if (!(status == rhs.status))
+      return false;
+    if (!(serverProtocolVersion == rhs.serverProtocolVersion))
+      return false;
+    if (__isset.sessionHandle != rhs.__isset.sessionHandle)
+      return false;
+    else if (__isset.sessionHandle && !(sessionHandle == rhs.sessionHandle))
+      return false;
+    if (__isset.configuration != rhs.__isset.configuration)
+      return false;
+    else if (__isset.configuration && !(configuration == rhs.configuration))
+      return false;
+    return true;
+  }
+  bool operator != (const TRestoreSessionResp &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const TRestoreSessionResp & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(TRestoreSessionResp &a, TRestoreSessionResp &b);
+
+inline std::ostream& operator<<(std::ostream& out, const TRestoreSessionResp& obj)
 {
   obj.printTo(out);
   return out;
