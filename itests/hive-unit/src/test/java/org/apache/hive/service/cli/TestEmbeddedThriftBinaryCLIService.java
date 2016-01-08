@@ -42,6 +42,12 @@ public class TestEmbeddedThriftBinaryCLIService extends CLIServiceTest {
     client = new ThriftCLIServiceClient(service);
   }
 
+  @Override
+  void restartService() throws Exception {
+    service.stop();
+    service.start();
+  }
+
   /* (non-Javadoc)
    * @see org.apache.hive.service.cli.CLIServiceTest#setUp()
    */

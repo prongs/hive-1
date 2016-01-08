@@ -72,6 +72,8 @@ public abstract class CLIServiceTest {
   public void tearDown() throws Exception {
   }
 
+  abstract void restartService() throws Exception;
+
   @Test
   public void testOpenSession() throws Exception {
     SessionHandle sessionHandle = client.openSession(
@@ -87,7 +89,7 @@ public abstract class CLIServiceTest {
   @Test
   public void testRestoreSession() throws Exception {
     SessionHandle handle = openSession(new HashMap<String, String>());
-    client.closeSession(handle);
+    restartService();
     SessionHandle restoredHandle = client.restoreSession(handle, "tom", "password");
     assertEquals(handle, restoredHandle);
     client.closeSession(restoredHandle);

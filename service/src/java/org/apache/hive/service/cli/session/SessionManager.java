@@ -294,9 +294,10 @@ public class SessionManager extends CompositeService {
       } else {
         try {
           Class<?> clazz = Class.forName(sessionImplWithUGIclassName);
-          Constructor<?> constructor = clazz.getConstructor(String.class, String.class, Map.class, String.class);
-          hiveSessionUgi = (HiveSessionImplwithUGI) constructor.newInstance(new Object[]
-              {protocol, username, password, hiveConf, ipAddress, delegationToken});
+          Constructor<?> constructor = clazz.getConstructor(TProtocolVersion.class, String.class, String.class,
+            HiveConf.class, Map.class, String.class);
+          hiveSessionUgi = (HiveSessionImplwithUGI) constructor.newInstance(
+              protocol, username, password, hiveConf, ipAddress, delegationToken);
         } catch (Exception e) {
           throw new HiveSQLException("Cannot initilize session class:" + sessionImplWithUGIclassName);
         }
