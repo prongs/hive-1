@@ -995,6 +995,62 @@ class TOpenSessionResp
   ::Thrift::Struct.generate_accessors self
 end
 
+class TRestoreSessionReq
+  include ::Thrift::Struct, ::Thrift::Struct_Union
+  CLIENT_PROTOCOL = 1
+  SESSIONHANDLE = 2
+  USERNAME = 3
+  PASSWORD = 4
+  CONFIGURATION = 5
+
+  FIELDS = {
+    CLIENT_PROTOCOL => {:type => ::Thrift::Types::I32, :name => 'client_protocol', :default =>     7, :enum_class => ::TProtocolVersion},
+    SESSIONHANDLE => {:type => ::Thrift::Types::STRUCT, :name => 'sessionHandle', :class => ::TSessionHandle},
+    USERNAME => {:type => ::Thrift::Types::STRING, :name => 'username', :optional => true},
+    PASSWORD => {:type => ::Thrift::Types::STRING, :name => 'password', :optional => true},
+    CONFIGURATION => {:type => ::Thrift::Types::MAP, :name => 'configuration', :key => {:type => ::Thrift::Types::STRING}, :value => {:type => ::Thrift::Types::STRING}, :optional => true}
+  }
+
+  def struct_fields; FIELDS; end
+
+  def validate
+    raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field client_protocol is unset!') unless @client_protocol
+    raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field sessionHandle is unset!') unless @sessionHandle
+    unless @client_protocol.nil? || ::TProtocolVersion::VALID_VALUES.include?(@client_protocol)
+      raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Invalid value of field client_protocol!')
+    end
+  end
+
+  ::Thrift::Struct.generate_accessors self
+end
+
+class TRestoreSessionResp
+  include ::Thrift::Struct, ::Thrift::Struct_Union
+  STATUS = 1
+  SERVERPROTOCOLVERSION = 2
+  SESSIONHANDLE = 3
+  CONFIGURATION = 4
+
+  FIELDS = {
+    STATUS => {:type => ::Thrift::Types::STRUCT, :name => 'status', :class => ::TStatus},
+    SERVERPROTOCOLVERSION => {:type => ::Thrift::Types::I32, :name => 'serverProtocolVersion', :default =>     7, :enum_class => ::TProtocolVersion},
+    SESSIONHANDLE => {:type => ::Thrift::Types::STRUCT, :name => 'sessionHandle', :class => ::TSessionHandle, :optional => true},
+    CONFIGURATION => {:type => ::Thrift::Types::MAP, :name => 'configuration', :key => {:type => ::Thrift::Types::STRING}, :value => {:type => ::Thrift::Types::STRING}, :optional => true}
+  }
+
+  def struct_fields; FIELDS; end
+
+  def validate
+    raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field status is unset!') unless @status
+    raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field serverProtocolVersion is unset!') unless @serverProtocolVersion
+    unless @serverProtocolVersion.nil? || ::TProtocolVersion::VALID_VALUES.include?(@serverProtocolVersion)
+      raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Invalid value of field serverProtocolVersion!')
+    end
+  end
+
+  ::Thrift::Struct.generate_accessors self
+end
+
 class TCloseSessionReq
   include ::Thrift::Struct, ::Thrift::Struct_Union
   SESSIONHANDLE = 1

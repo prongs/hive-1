@@ -617,15 +617,15 @@ public class TExecuteStatementReq implements org.apache.thrift.TBase<TExecuteSta
           case 3: // CONF_OVERLAY
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map162 = iprot.readMapBegin();
-                struct.confOverlay = new HashMap<String,String>(2*_map162.size);
-                String _key163;
-                String _val164;
-                for (int _i165 = 0; _i165 < _map162.size; ++_i165)
+                org.apache.thrift.protocol.TMap _map182 = iprot.readMapBegin();
+                struct.confOverlay = new HashMap<String,String>(2*_map182.size);
+                String _key183;
+                String _val184;
+                for (int _i185 = 0; _i185 < _map182.size; ++_i185)
                 {
-                  _key163 = iprot.readString();
-                  _val164 = iprot.readString();
-                  struct.confOverlay.put(_key163, _val164);
+                  _key183 = iprot.readString();
+                  _val184 = iprot.readString();
+                  struct.confOverlay.put(_key183, _val184);
                 }
                 iprot.readMapEnd();
               }
@@ -670,10 +670,10 @@ public class TExecuteStatementReq implements org.apache.thrift.TBase<TExecuteSta
           oprot.writeFieldBegin(CONF_OVERLAY_FIELD_DESC);
           {
             oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, struct.confOverlay.size()));
-            for (Map.Entry<String, String> _iter166 : struct.confOverlay.entrySet())
+            for (Map.Entry<String, String> _iter186 : struct.confOverlay.entrySet())
             {
-              oprot.writeString(_iter166.getKey());
-              oprot.writeString(_iter166.getValue());
+              oprot.writeString(_iter186.getKey());
+              oprot.writeString(_iter186.getValue());
             }
             oprot.writeMapEnd();
           }
@@ -715,10 +715,10 @@ public class TExecuteStatementReq implements org.apache.thrift.TBase<TExecuteSta
       if (struct.isSetConfOverlay()) {
         {
           oprot.writeI32(struct.confOverlay.size());
-          for (Map.Entry<String, String> _iter167 : struct.confOverlay.entrySet())
+          for (Map.Entry<String, String> _iter187 : struct.confOverlay.entrySet())
           {
-            oprot.writeString(_iter167.getKey());
-            oprot.writeString(_iter167.getValue());
+            oprot.writeString(_iter187.getKey());
+            oprot.writeString(_iter187.getValue());
           }
         }
       }
@@ -738,15 +738,15 @@ public class TExecuteStatementReq implements org.apache.thrift.TBase<TExecuteSta
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TMap _map168 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-          struct.confOverlay = new HashMap<String,String>(2*_map168.size);
-          String _key169;
-          String _val170;
-          for (int _i171 = 0; _i171 < _map168.size; ++_i171)
+          org.apache.thrift.protocol.TMap _map188 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+          struct.confOverlay = new HashMap<String,String>(2*_map188.size);
+          String _key189;
+          String _val190;
+          for (int _i191 = 0; _i191 < _map188.size; ++_i191)
           {
-            _key169 = iprot.readString();
-            _val170 = iprot.readString();
-            struct.confOverlay.put(_key169, _val170);
+            _key189 = iprot.readString();
+            _val190 = iprot.readString();
+            struct.confOverlay.put(_key189, _val190);
           }
         }
         struct.setConfOverlayIsSet(true);
