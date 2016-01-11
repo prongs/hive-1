@@ -92,6 +92,10 @@ public abstract class CLIServiceTest {
     restartService();
     SessionHandle restoredHandle = client.restoreSession(handle, "tom", "password");
     assertEquals(handle, restoredHandle);
+    // Random operation
+    OperationHandle opHandle = client.executeStatement(handle, "CREATE TABLE TEST_EXEC(ID STRING)", null);
+    client.closeOperation(opHandle);
+    // close session
     client.closeSession(restoredHandle);
   }
 
