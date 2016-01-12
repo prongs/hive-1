@@ -1951,6 +1951,10 @@ public class HiveConf extends Configuration {
         "HttpOnly attribute of the HS2 generated cookie."),
 
     // binary transport settings
+    HIVE_SERVER2_THRIFT_AUTH_MAX_RETRIES("hive.server2.thrift.auth.max.retries", 1,
+        "Number of maximum retries to authenticate HS2 server or HMS server against Kerberos service.\n"
+        + "This is to mitigate some false alarm auth issues, such that concurrent query executions\n"
+        + "against single HS2 server may fail to authenticate due to 'Request is a replay'."),
     HIVE_SERVER2_THRIFT_PORT("hive.server2.thrift.port", 10000,
         "Port number of HiveServer2 Thrift interface when hive.server2.transport.mode is 'binary'."),
     HIVE_SERVER2_THRIFT_SASL_QOP("hive.server2.thrift.sasl.qop", "auth",
@@ -2409,9 +2413,10 @@ public class HiveConf extends Configuration {
         "ZooKeeper for ZooKeeper SecretManager."),
     LLAP_ZKSM_ZK_CONNECTION_STRING("hive.llap.zk.sm.connectionString", "",
         "ZooKeeper connection string for ZooKeeper SecretManager."),
-    LLAP_SECURITY_ACL("hive.llap.daemon.service.acl", "*", "The ACL for LLAP daemon."),
-    LLAP_MANAGEMENT_ACL("hive.llap.management.service.acl", "*",
-        "The ACL for LLAP daemon management."),
+    // Note: do not rename to ..service.acl; Hadoop generates .hosts setting name from this,
+    // resulting in a collision with existing hive.llap.daemon.service.hosts and bizarre errors.
+    LLAP_SECURITY_ACL("hive.llap.daemon.acl", "*", "The ACL for LLAP daemon."),
+    LLAP_MANAGEMENT_ACL("hive.llap.management.acl", "*", "The ACL for LLAP daemon management."),
     // Hadoop DelegationTokenManager default is 1 week.
     LLAP_DELEGATION_TOKEN_LIFETIME("hive.llap.daemon.delegation.token.lifetime", "14d",
          new TimeValidator(TimeUnit.SECONDS),
