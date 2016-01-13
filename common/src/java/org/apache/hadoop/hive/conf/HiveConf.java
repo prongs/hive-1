@@ -967,7 +967,7 @@ public class HiveConf extends Configuration {
         "than this threshold, it will try to convert the common join into map join"),
 
 
-    HIVE_SCHEMA_EVOLUTION("hive.exec.schema.evolution", true,
+    HIVE_SCHEMA_EVOLUTION("hive.exec.schema.evolution", false,
         "Use schema evolution to convert self-describing file format's data to the schema desired by the reader."),
 
     HIVESAMPLERANDOMNUM("hive.sample.seednumber", 0,
@@ -2430,7 +2430,8 @@ public class HiveConf extends Configuration {
       "Number of RPC handlers for LLAP daemon.", "llap.daemon.rpc.num.handlers"),
     LLAP_DAEMON_WORK_DIRS("hive.llap.daemon.work.dirs", "",
       "Working directories for the daemon. Needs to be set for a secure cluster, since LLAP may\n" +
-      "not have access to the default YARN working directories.", "llap.daemon.work.dirs"),
+      "not have access to the default YARN working directories. yarn.nodemanager.local-dirs is\n" +
+      "used if this is not set", "llap.daemon.work.dirs"),
     LLAP_DAEMON_YARN_SHUFFLE_PORT("hive.llap.daemon.yarn.shuffle.port", 15551,
       "YARN shuffle port for LLAP-daemon-hosted shuffle.", "llap.daemon.yarn.shuffle.port"),
     LLAP_DAEMON_YARN_CONTAINER_MB("hive.llap.daemon.yarn.container.mb", -1,
