@@ -512,7 +512,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     throws HiveSQLException, LoginException, IOException {
     TProtocolVersion protocol = getMinVersion(CLIService.SERVER_VERSION,
       req.getClient_protocol());
-    SessionHandle sessionHandle = cliService.restoreSession(new SessionHandle(res.getSessionHandle()),
+    SessionHandle sessionHandle = cliService.restoreSession(new SessionHandle(req.getSessionHandle()),
       req.getUsername(), req.getPassword(), req.getConfiguration());
     res.setServerProtocolVersion(protocol);
     return sessionHandle;

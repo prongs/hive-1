@@ -48,6 +48,7 @@ import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.SessionHandle;
 import org.apache.hive.service.cli.operation.Operation;
 import org.apache.hive.service.cli.operation.OperationManager;
+import org.apache.hive.service.rpc.thrift.TOpenSessionReq;
 import org.apache.hive.service.rpc.thrift.TProtocolVersion;
 import org.apache.hive.service.server.HiveServer2;
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup;
@@ -261,7 +262,7 @@ public class SessionManager extends CompositeService {
    * The username passed to this method is the effective username.
    * If withImpersonation is true (==doAs true) we wrap all the calls in HiveSession
    * within a UGI.doAs, where UGI corresponds to the effective user.
-   * @see org.apache.hive.service.cli.thrift.ThriftCLIService#getUserName()
+   * @see org.apache.hive.service.cli.thrift.ThriftCLIService#getUserName(TOpenSessionReq)
    *
    * @param protocol
    * @param username
@@ -305,26 +306,24 @@ public class SessionManager extends CompositeService {
       session = HiveSessionProxy.getProxy(hiveSessionUgi, hiveSessionUgi.getSessionUgi());
       hiveSessionUgi.setProxySession(session);
     } else {
-      if (sessionImplclassName == null) {
-        session = new HiveSessionImpl(protocol, username, password, hiveConf, ipAddress);
-      } else {
-        try {
-          if (sessionHandle != null) {
-            Class<?> clazz = Class.forName(sessionImplclassName);
-            Constructor<?> constructor = clazz.getConstructor(SessionHandle.class, TProtocolVersion.class,
-              String.class, String.class, HiveConf.class, Map.class, String.class);
-            session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
-              hiveConf, sessionConf, TSetIpAddressProcessor.getUserIpAddress());
-          } else {
-            Class<?> clazz = Class.forName(sessionImplclassName);
-            Constructor<?> constructor = clazz.getConstructor(TProtocolVersion.class,
-              String.class, String.class, HiveConf.class, Map.class, String.class);
-            session = (HiveSession) constructor.newInstance(protocol, username, password,
-              hiveConf, sessionConf, TSetIpAddressProcessor.getUserIpAddress());
-          }
-        } catch (Exception e) {
-          throw new HiveSQLException("Cannot initilize session class:" + sessionImplclassName, e);
+      Class<?> sessionImplClass = HiveSessionImpl.class;
+      try {
+        if (sessionImplclassName != null) {
+          sessionImplClass = Class.forName(sessionImplclassName);
         }
+        if (sessionHandle != null) {
+          Constructor<?> constructor = sessionImplClass.getConstructor(SessionHandle.class, TProtocolVersion.class,
+            String.class, String.class, HiveConf.class, Map.class, String.class);
+          session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
+            hiveConf, sessionConf, TSetIpAddressProcessor.getUserIpAddress());
+        } else {
+          Constructor<?> constructor = sessionImplClass.getConstructor(TProtocolVersion.class,
+            String.class, String.class, HiveConf.class, Map.class, String.class);
+          session = (HiveSession) constructor.newInstance(protocol, username, password,
+            hiveConf, sessionConf, TSetIpAddressProcessor.getUserIpAddress());
+        }
+      } catch (Exception e) {
+        throw new HiveSQLException("Cannot initilize session class:" + sessionImplclassName, e);
       }
     }
     session.setSessionManager(this);
