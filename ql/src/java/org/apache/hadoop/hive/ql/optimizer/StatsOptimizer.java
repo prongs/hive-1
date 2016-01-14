@@ -65,6 +65,7 @@ import org.apache.hadoop.hive.ql.plan.ExprNodeColumnDesc;
 import org.apache.hadoop.hive.ql.plan.ExprNodeConstantDesc;
 import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 import org.apache.hadoop.hive.ql.plan.FetchWork;
+import org.apache.hadoop.hive.ql.plan.GroupByDesc;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFCount;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFMax;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFMin;
@@ -117,13 +118,18 @@ public class StatsOptimizer extends Transform {
     opRules.put(new RuleRegExp("R2", TS + SEL + GBY + RS + GBY + FS),
             new MetaDataProcessor(pctx));
 
-    Dispatcher disp = new DefaultRuleDispatcher(null, opRules, null);
+    NodeProcessorCtx soProcCtx = new StatsOptimizerProcContext();
+    Dispatcher disp = new DefaultRuleDispatcher(null, opRules, soProcCtx);
     GraphWalker ogw = new DefaultGraphWalker(disp);
 
     ArrayList<Node> topNodes = new ArrayList<Node>();
     topNodes.addAll(pctx.getTopOps().values());
     ogw.startWalking(topNodes, null);
     return pctx;
+  }
+
+  private static class StatsOptimizerProcContext implements NodeProcessorCtx {
+    boolean stopProcess = false;
   }
 
   private static class MetaDataProcessor implements NodeProcessor {
@@ -199,6 +205,21 @@ public class StatsOptimizer extends Transform {
       }
     }
 
+    private boolean hasNullOrConstantGbyKey(GroupByOperator gbyOp) {
+      GroupByDesc gbyDesc = gbyOp.getConf();
+      // If the Group by operator has null key
+      if (gbyDesc.getOutputColumnNames().size() ==
+        gbyDesc.getAggregators().size()) {
+        return true;
+      }
+      for (ExprNodeDesc en :gbyDesc.getKeys()) {
+        if (!(en instanceof ExprNodeConstantDesc)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     @Override
     public Object process(Node nd, Stack<Node> stack, NodeProcessorCtx procCtx,
         Object... nodeOutputs) throws SemanticException {
@@ -209,7 +230,21 @@ public class StatsOptimizer extends Transform {
       // 3. Connect to metastore and get the stats
       // 4. Compose rows and add it in FetchWork
       // 5. Delete GBY - RS - GBY - SEL from the pipeline.
+      StatsOptimizerProcContext soProcCtx = (StatsOptimizerProcContext) procCtx;
 
+      // If the optimization has been stopped for the reasons like being not qualified,
+      // or lack of the stats data. we do not continue this process. For an example,
+      // for a query select max(value) from src1 union all select max(value) from src2
+      // if it has been union remove optimized, the AST tree will become
+      // TS[0]->SEL[1]->GBY[2]-RS[3]->GBY[4]->FS[17]
+      // TS[6]->SEL[7]->GBY[8]-RS[9]->GBY[10]->FS[18]
+      // if TS[0] branch for src1 is not optimized because src1 does not have column stats
+      // there is no need to continue processing TS[6] branch
+      if (soProcCtx.stopProcess) {
+        return null;
+      }
+
+      boolean isOptimized = false;
       try {
         TableScanOperator tsOp = (TableScanOperator) stack.get(0);
         if (tsOp.getNumParent() > 0) {
@@ -227,8 +262,7 @@ public class StatsOptimizer extends Transform {
         // Since we have done an exact match on TS-SEL-GBY-RS-GBY-(SEL)-FS
         // we need not to do any instanceof checks for following.
         GroupByOperator pgbyOp = (GroupByOperator)stack.get(2);
-        if (pgbyOp.getConf().getOutputColumnNames().size() !=
-            pgbyOp.getConf().getAggregators().size()) {
+        if (!hasNullOrConstantGbyKey(pgbyOp)) {
           return null;
         }
         ReduceSinkOperator rsOp = (ReduceSinkOperator)stack.get(3);
@@ -238,8 +272,7 @@ public class StatsOptimizer extends Transform {
         }
 
         GroupByOperator cgbyOp = (GroupByOperator)stack.get(4);
-        if (cgbyOp.getConf().getOutputColumnNames().size() !=
-            cgbyOp.getConf().getAggregators().size()) {
+        if (!hasNullOrConstantGbyKey(cgbyOp)) {
           return null;
         }
         Operator<?> last = (Operator<?>) stack.get(5);
@@ -607,7 +640,6 @@ public class StatsOptimizer extends Transform {
           }
         }
 
-
         List<List<Object>> allRows = new ArrayList<List<Object>>();
         List<String> colNames = new ArrayList<String>();
         List<ObjectInspector> ois = new ArrayList<ObjectInspector>();
@@ -634,19 +666,33 @@ public class StatsOptimizer extends Transform {
           }
           allRows.add(oneRowWithConstant);
         }
-        StandardStructObjectInspector sOI = ObjectInspectorFactory.
-            getStandardStructObjectInspector(colNames, ois);
-        FetchWork fWork = new FetchWork(allRows, sOI);
-        FetchTask fTask = (FetchTask)TaskFactory.get(fWork, pctx.getConf());
-        fWork.setLimit(allRows.size());
-        pctx.setFetchTask(fTask);
 
+        FetchWork fWork = null;
+        FetchTask fTask = pctx.getFetchTask();
+        if (fTask != null) {
+          fWork = fTask.getWork();
+          fWork.getRowsComputedUsingStats().addAll(allRows);
+        } else {
+          StandardStructObjectInspector sOI = ObjectInspectorFactory.
+              getStandardStructObjectInspector(colNames, ois);
+          fWork = new FetchWork(allRows, sOI);
+          fTask = (FetchTask)TaskFactory.get(fWork, pctx.getConf());
+          pctx.setFetchTask(fTask);
+        }
+        fWork.setLimit(fWork.getRowsComputedUsingStats().size());
+        isOptimized = true;
         return null;
       } catch (Exception e) {
         // this is best effort optimization, bail out in error conditions and
         // try generate and execute slower plan
         Logger.debug("Failed to optimize using metadata optimizer", e);
         return null;
+      } finally {
+        // If StatOptimization is not applied for any reason, the FetchTask should still not have been set
+        if (!isOptimized) {
+          soProcCtx.stopProcess = true;
+          pctx.setFetchTask(null);
+        }
       }
     }
 
