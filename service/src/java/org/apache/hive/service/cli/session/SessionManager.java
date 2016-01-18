@@ -306,19 +306,19 @@ public class SessionManager extends CompositeService {
       session = HiveSessionProxy.getProxy(hiveSessionUgi, hiveSessionUgi.getSessionUgi());
       hiveSessionUgi.setProxySession(session);
     } else {
-      try {
-        if (sessionImplclassName == null) {
-          session = new HiveSessionImpl(sessionHandle, protocol, username, password, hiveConf,
-            TSetIpAddressProcessor.getUserIpAddress());
-        } else {
-          Class<?> sessionImplClass = Class.forName(sessionImplclassName);
-          Constructor<?> constructor = sessionImplClass.getConstructor(SessionHandle.class, TProtocolVersion.class,
-            String.class, String.class, HiveConf.class, String.class);
-          session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
-            hiveConf, TSetIpAddressProcessor.getUserIpAddress());
+      if (sessionImplclassName == null) {
+        session = new HiveSessionImpl(sessionHandle, protocol, username, password, hiveConf,
+          TSetIpAddressProcessor.getUserIpAddress());
+      } else {
+        try {
+        Class<?> sessionImplClass = Class.forName(sessionImplclassName);
+        Constructor<?> constructor = sessionImplClass.getConstructor(SessionHandle.class, TProtocolVersion.class,
+          String.class, String.class, HiveConf.class, String.class);
+        session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
+          hiveConf, TSetIpAddressProcessor.getUserIpAddress());
+        } catch (Exception e) {
+          throw new HiveSQLException("Cannot initilize session class:" + sessionImplclassName, e);
         }
-      } catch (Exception e) {
-        throw new HiveSQLException("Cannot initilize session class:" + sessionImplclassName, e);
       }
     }
     session.setSessionManager(this);

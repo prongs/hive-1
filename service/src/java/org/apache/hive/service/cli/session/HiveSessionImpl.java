@@ -117,11 +117,7 @@ public class HiveSessionImpl implements HiveSession {
     this.username = username;
     this.password = password;
     creationTime = System.currentTimeMillis();
-    if(sessionHandle != null) {
-      this.sessionHandle = sessionHandle;
-    } else {
-      this.sessionHandle = new SessionHandle(protocol);
-    }
+    this.sessionHandle = sessionHandle != null ? sessionHandle : new SessionHandle(protocol);
     this.hiveConf = new HiveConf(serverhiveConf);
     this.ipAddress = ipAddress;
     try {
