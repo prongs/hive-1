@@ -111,25 +111,19 @@ public class HiveSessionImpl implements HiveSession {
   private volatile long lastAccessTime;
   private volatile long lastIdleTime;
 
-  public HiveSessionImpl(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
-      HiveConf serverhiveConf, String ipAddress) {
-    this(sessionHandle, protocol, username, password, serverhiveConf, null, ipAddress);
-  }
 
   public HiveSessionImpl(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
-      HiveConf serverhiveConf, Map<String, String> sessionConfMap, String ipAddress) {
+    HiveConf serverhiveConf, String ipAddress) {
     this.username = username;
     this.password = password;
     creationTime = System.currentTimeMillis();
-    this.sessionHandle = sessionHandle;
+    if(sessionHandle != null) {
+      this.sessionHandle = sessionHandle;
+    } else {
+      this.sessionHandle = new SessionHandle(protocol);
+    }
     this.hiveConf = new HiveConf(serverhiveConf);
     this.ipAddress = ipAddress;
-    //set conf properties specified by user from client side
-    if (sessionConfMap != null) {
-      for (Map.Entry<String, String> entry : sessionConfMap.entrySet()) {
-        hiveConf.verifyAndSet(entry.getKey(), entry.getValue());
-      }
-    }
     try {
       // In non-impersonation mode, map scheduler queue to current user
       // if fair scheduler is configured.
@@ -151,12 +145,7 @@ public class HiveSessionImpl implements HiveSession {
 
   public HiveSessionImpl(TProtocolVersion protocol, String username, String password,
     HiveConf serverhiveConf, String ipAddress) {
-    this(protocol, username, password, serverhiveConf, null, ipAddress);
-  }
-
-  public HiveSessionImpl(TProtocolVersion protocol, String username, String password,
-    HiveConf serverhiveConf, Map<String, String> sessionConf, String ipAddress) {
-    this(new SessionHandle(protocol), protocol, username, password, serverhiveConf, sessionConf, ipAddress);
+    this(null, protocol, username, password, serverhiveConf, ipAddress);
   }
 
 
