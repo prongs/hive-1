@@ -579,6 +579,7 @@ struct TOpenSessionResp {
   4: optional map<string, string> configuration
 }
 
+
 // CloseSession()
 //
 // Closes the specified session and frees any resources
