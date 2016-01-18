@@ -311,8 +311,8 @@ public class SessionManager extends CompositeService {
           TSetIpAddressProcessor.getUserIpAddress());
       } else {
         try {
-        Class<?> sessionImplClass = Class.forName(sessionImplclassName);
-        Constructor<?> constructor = sessionImplClass.getConstructor(SessionHandle.class, TProtocolVersion.class,
+        Class<?> clazz = Class.forName(sessionImplclassName);
+        Constructor<?> constructor = clazz.getConstructor(SessionHandle.class, TProtocolVersion.class,
           String.class, String.class, HiveConf.class, String.class);
         session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
           hiveConf, TSetIpAddressProcessor.getUserIpAddress());
