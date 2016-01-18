@@ -296,7 +296,7 @@ public class SessionManager extends CompositeService {
         try {
           Class<?> clazz = Class.forName(sessionImplWithUGIclassName);
           Constructor<?> constructor = clazz.getConstructor(TProtocolVersion.class, String.class, String.class,
-            HiveConf.class, Map.class, String.class);
+            HiveConf.class, String.class, String.class);
           hiveSessionUgi = (HiveSessionImplwithUGI) constructor.newInstance(
               protocol, username, password, hiveConf, ipAddress, delegationToken);
         } catch (Exception e) {

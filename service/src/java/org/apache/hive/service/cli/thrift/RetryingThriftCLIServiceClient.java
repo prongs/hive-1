@@ -57,7 +57,6 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * RetryingThriftCLIServiceClient. Creates a proxy for a CLIServiceClient
  * implementation and retries calls to it on failure.

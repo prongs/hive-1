@@ -117,6 +117,7 @@ public class ThriftCLIServiceClient extends CLIServiceClient {
       throw new HiveSQLException(e);
     }
   }
+
   /* (non-Javadoc)
    * @see org.apache.hive.service.cli.ICLIService#closeSession(org.apache.hive.service.cli.SessionHandle)
    */
