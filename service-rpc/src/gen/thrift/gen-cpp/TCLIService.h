@@ -22,7 +22,6 @@ class TCLIServiceIf {
  public:
   virtual ~TCLIServiceIf() {}
   virtual void OpenSession(TOpenSessionResp& _return, const TOpenSessionReq& req) = 0;
-  virtual void RestoreSession(TRestoreSessionResp& _return, const TRestoreSessionReq& req) = 0;
   virtual void CloseSession(TCloseSessionResp& _return, const TCloseSessionReq& req) = 0;
   virtual void GetInfo(TGetInfoResp& _return, const TGetInfoReq& req) = 0;
   virtual void ExecuteStatement(TExecuteStatementResp& _return, const TExecuteStatementReq& req) = 0;
@@ -71,9 +70,6 @@ class TCLIServiceNull : virtual public TCLIServiceIf {
  public:
   virtual ~TCLIServiceNull() {}
   void OpenSession(TOpenSessionResp& /* _return */, const TOpenSessionReq& /* req */) {
-    return;
-  }
-  void RestoreSession(TRestoreSessionResp& /* _return */, const TRestoreSessionReq& /* req */) {
     return;
   }
   void CloseSession(TCloseSessionResp& /* _return */, const TCloseSessionReq& /* req */) {
@@ -231,110 +227,6 @@ class TCLIService_OpenSession_presult {
   TOpenSessionResp* success;
 
   _TCLIService_OpenSession_presult__isset __isset;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-
-};
-
-typedef struct _TCLIService_RestoreSession_args__isset {
-  _TCLIService_RestoreSession_args__isset() : req(false) {}
-  bool req :1;
-} _TCLIService_RestoreSession_args__isset;
-
-class TCLIService_RestoreSession_args {
- public:
-
-  TCLIService_RestoreSession_args(const TCLIService_RestoreSession_args&);
-  TCLIService_RestoreSession_args& operator=(const TCLIService_RestoreSession_args&);
-  TCLIService_RestoreSession_args() {
-  }
-
-  virtual ~TCLIService_RestoreSession_args() throw();
-  TRestoreSessionReq req;
-
-  _TCLIService_RestoreSession_args__isset __isset;
-
-  void __set_req(const TRestoreSessionReq& val);
-
-  bool operator == (const TCLIService_RestoreSession_args & rhs) const
-  {
-    if (!(req == rhs.req))
-      return false;
-    return true;
-  }
-  bool operator != (const TCLIService_RestoreSession_args &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const TCLIService_RestoreSession_args & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-
-class TCLIService_RestoreSession_pargs {
- public:
-
-
-  virtual ~TCLIService_RestoreSession_pargs() throw();
-  const TRestoreSessionReq* req;
-
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _TCLIService_RestoreSession_result__isset {
-  _TCLIService_RestoreSession_result__isset() : success(false) {}
-  bool success :1;
-} _TCLIService_RestoreSession_result__isset;
-
-class TCLIService_RestoreSession_result {
- public:
-
-  TCLIService_RestoreSession_result(const TCLIService_RestoreSession_result&);
-  TCLIService_RestoreSession_result& operator=(const TCLIService_RestoreSession_result&);
-  TCLIService_RestoreSession_result() {
-  }
-
-  virtual ~TCLIService_RestoreSession_result() throw();
-  TRestoreSessionResp success;
-
-  _TCLIService_RestoreSession_result__isset __isset;
-
-  void __set_success(const TRestoreSessionResp& val);
-
-  bool operator == (const TCLIService_RestoreSession_result & rhs) const
-  {
-    if (!(success == rhs.success))
-      return false;
-    return true;
-  }
-  bool operator != (const TCLIService_RestoreSession_result &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const TCLIService_RestoreSession_result & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _TCLIService_RestoreSession_presult__isset {
-  _TCLIService_RestoreSession_presult__isset() : success(false) {}
-  bool success :1;
-} _TCLIService_RestoreSession_presult__isset;
-
-class TCLIService_RestoreSession_presult {
- public:
-
-
-  virtual ~TCLIService_RestoreSession_presult() throw();
-  TRestoreSessionResp* success;
-
-  _TCLIService_RestoreSession_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -2240,9 +2132,6 @@ class TCLIServiceClient : virtual public TCLIServiceIf {
   void OpenSession(TOpenSessionResp& _return, const TOpenSessionReq& req);
   void send_OpenSession(const TOpenSessionReq& req);
   void recv_OpenSession(TOpenSessionResp& _return);
-  void RestoreSession(TRestoreSessionResp& _return, const TRestoreSessionReq& req);
-  void send_RestoreSession(const TRestoreSessionReq& req);
-  void recv_RestoreSession(TRestoreSessionResp& _return);
   void CloseSession(TCloseSessionResp& _return, const TCloseSessionReq& req);
   void send_CloseSession(const TCloseSessionReq& req);
   void recv_CloseSession(TCloseSessionResp& _return);
@@ -2313,7 +2202,6 @@ class TCLIServiceProcessor : public ::apache::thrift::TDispatchProcessor {
   typedef std::map<std::string, ProcessFunction> ProcessMap;
   ProcessMap processMap_;
   void process_OpenSession(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
-  void process_RestoreSession(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_CloseSession(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_GetInfo(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_ExecuteStatement(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -2336,7 +2224,6 @@ class TCLIServiceProcessor : public ::apache::thrift::TDispatchProcessor {
   TCLIServiceProcessor(boost::shared_ptr<TCLIServiceIf> iface) :
     iface_(iface) {
     processMap_["OpenSession"] = &TCLIServiceProcessor::process_OpenSession;
-    processMap_["RestoreSession"] = &TCLIServiceProcessor::process_RestoreSession;
     processMap_["CloseSession"] = &TCLIServiceProcessor::process_CloseSession;
     processMap_["GetInfo"] = &TCLIServiceProcessor::process_GetInfo;
     processMap_["ExecuteStatement"] = &TCLIServiceProcessor::process_ExecuteStatement;
@@ -2390,16 +2277,6 @@ class TCLIServiceMultiface : virtual public TCLIServiceIf {
       ifaces_[i]->OpenSession(_return, req);
     }
     ifaces_[i]->OpenSession(_return, req);
-    return;
-  }
-
-  void RestoreSession(TRestoreSessionResp& _return, const TRestoreSessionReq& req) {
-    size_t sz = ifaces_.size();
-    size_t i = 0;
-    for (; i < (sz - 1); ++i) {
-      ifaces_[i]->RestoreSession(_return, req);
-    }
-    ifaces_[i]->RestoreSession(_return, req);
     return;
   }
 
@@ -2616,9 +2493,6 @@ class TCLIServiceConcurrentClient : virtual public TCLIServiceIf {
   void OpenSession(TOpenSessionResp& _return, const TOpenSessionReq& req);
   int32_t send_OpenSession(const TOpenSessionReq& req);
   void recv_OpenSession(TOpenSessionResp& _return, const int32_t seqid);
-  void RestoreSession(TRestoreSessionResp& _return, const TRestoreSessionReq& req);
-  int32_t send_RestoreSession(const TRestoreSessionReq& req);
-  void recv_RestoreSession(TRestoreSessionResp& _return, const int32_t seqid);
   void CloseSession(TCloseSessionResp& _return, const TCloseSessionReq& req);
   int32_t send_CloseSession(const TCloseSessionReq& req);
   void recv_CloseSession(TCloseSessionResp& _return, const int32_t seqid);

@@ -44,15 +44,6 @@ public class EmbeddedCLIServiceClient extends CLIServiceClient {
     return cliService.openSession(username, password, configuration);
   }
 
-  /* (non-Javadoc)
-   * @see org.apache.hive.service.cli.CLIServiceClient#restoreSession(SessionHandle, java.lang.String, java.lang.String, java.util.Map)
-   */
-  @Override
-  public SessionHandle restoreSession(SessionHandle handle, String username, String password,
-    Map<String, String> configuration) throws HiveSQLException {
-    return cliService.restoreSession(handle, username, password, configuration);
-  }
-
   @Override
   public SessionHandle openSessionWithImpersonation(String username, String password,
       Map<String, String> configuration, String delegationToken) throws HiveSQLException {

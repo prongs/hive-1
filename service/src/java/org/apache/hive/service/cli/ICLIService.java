@@ -28,9 +28,6 @@ public interface ICLIService {
       Map<String, String> configuration)
           throws HiveSQLException;
 
-  SessionHandle restoreSession(SessionHandle sessionHandle, String username, String password,
-    Map<String, String> configuration) throws HiveSQLException;
-
   SessionHandle openSessionWithImpersonation(String username, String password,
       Map<String, String> configuration, String delegationToken)
           throws HiveSQLException;

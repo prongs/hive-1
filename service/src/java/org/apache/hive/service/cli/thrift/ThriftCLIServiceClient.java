@@ -75,8 +75,6 @@ import org.apache.hive.service.rpc.thrift.TOpenSessionResp;
 import org.apache.hive.service.rpc.thrift.TProtocolVersion;
 import org.apache.hive.service.rpc.thrift.TRenewDelegationTokenReq;
 import org.apache.hive.service.rpc.thrift.TRenewDelegationTokenResp;
-import org.apache.hive.service.rpc.thrift.TRestoreSessionReq;
-import org.apache.hive.service.rpc.thrift.TRestoreSessionResp;
 import org.apache.hive.service.rpc.thrift.TStatus;
 import org.apache.hive.service.rpc.thrift.TStatusCode;
 import org.apache.thrift.TException;
@@ -119,30 +117,6 @@ public class ThriftCLIServiceClient extends CLIServiceClient {
       throw new HiveSQLException(e);
     }
   }
-
-  /* (non-Javadoc)
-   * @see org.apache.hive.service.cli.ICLIService#restoreSession(SessionHandle, java.lang.String, java.lang.String, java.util.Map)
-   */
-  @Override
-  public SessionHandle restoreSession(SessionHandle handle, String username, String password,
-    Map<String, String> configuration)
-    throws HiveSQLException {
-    try {
-      TRestoreSessionReq req = new TRestoreSessionReq();
-      req.setSessionHandle(handle.toTSessionHandle());
-      req.setUsername(username);
-      req.setPassword(password);
-      req.setConfiguration(configuration);
-      TRestoreSessionResp resp = cliService.RestoreSession(req);
-      checkStatus(resp.getStatus());
-      return new SessionHandle(resp.getSessionHandle(), resp.getServerProtocolVersion());
-    } catch (HiveSQLException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new HiveSQLException(e);
-    }
-  }
-
   /* (non-Javadoc)
    * @see org.apache.hive.service.cli.ICLIService#closeSession(org.apache.hive.service.cli.SessionHandle)
    */

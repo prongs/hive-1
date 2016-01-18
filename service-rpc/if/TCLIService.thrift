@@ -579,43 +579,6 @@ struct TOpenSessionResp {
   4: optional map<string, string> configuration
 }
 
-// RestoreSession()
-//
-// Restore an already created session (connection) on the server against
-// which operations may be executed.
-struct TRestoreSessionReq {
-  // The version of the HiveServer2 protocol that the client is using.
-  1: required TProtocolVersion client_protocol = TProtocolVersion.HIVE_CLI_SERVICE_PROTOCOL_V8
-
-  2: required TSessionHandle sessionHandle
-  // Username and password for authentication.
-  // Depending on the authentication scheme being used,
-  // this information may instead be provided by a lower
-  // protocol layer, in which case these fields may be
-  // left unset.
-  3: optional string username
-  4: optional string password
-
-  // Configuration overlay which is applied when the session is
-  // first created.
-  5: optional map<string, string> configuration
-}
-
-// restore session response is same as open session response
-struct TRestoreSessionResp {
-  1: required TStatus status
-
-  // The protocol version that the server is using.
-  2: required TProtocolVersion serverProtocolVersion = TProtocolVersion.HIVE_CLI_SERVICE_PROTOCOL_V8
-
-  // Session Handle
-  3: optional TSessionHandle sessionHandle
-
-  // The configuration settings for this session.
-  4: optional map<string, string> configuration
-}
-
-
 // CloseSession()
 //
 // Closes the specified session and frees any resources
@@ -1171,8 +1134,6 @@ struct TRenewDelegationTokenResp {
 service TCLIService {
 
   TOpenSessionResp OpenSession(1:TOpenSessionReq req);
-
-  TRestoreSessionResp RestoreSession(1:TRestoreSessionReq req);
 
   TCloseSessionResp CloseSession(1:TCloseSessionReq req);
 

@@ -107,12 +107,6 @@ public class RetryingThriftCLIServiceClient implements InvocationHandler {
     }
 
     @Override
-    public SessionHandle restoreSession(SessionHandle sessionHandle, String username, String password,
-      Map<String, String> configuration) throws HiveSQLException{
-      return cliService.restoreSession(sessionHandle, username, password, configuration);
-    }
-
-    @Override
     public SessionHandle openSessionWithImpersonation(String username,
                                                       String password,
                                                       Map<String, String> configuration,

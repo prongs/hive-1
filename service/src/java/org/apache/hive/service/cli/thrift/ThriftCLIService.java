@@ -90,8 +90,6 @@ import org.apache.hive.service.rpc.thrift.TOpenSessionResp;
 import org.apache.hive.service.rpc.thrift.TProtocolVersion;
 import org.apache.hive.service.rpc.thrift.TRenewDelegationTokenReq;
 import org.apache.hive.service.rpc.thrift.TRenewDelegationTokenResp;
-import org.apache.hive.service.rpc.thrift.TRestoreSessionReq;
-import org.apache.hive.service.rpc.thrift.TRestoreSessionResp;
 import org.apache.hive.service.rpc.thrift.TStatus;
 import org.apache.hive.service.rpc.thrift.TStatusCode;
 import org.apache.hive.service.server.HiveServer2;
@@ -378,29 +376,6 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     return resp;
   }
 
-  @Override
-  public TRestoreSessionResp RestoreSession(TRestoreSessionReq req) throws TException {
-    LOG.info("Client protocol version: " + req.getClient_protocol());
-    TRestoreSessionResp resp = new TRestoreSessionResp();
-    try {
-      SessionHandle sessionHandle = getSessionHandle(req, resp);
-      resp.setSessionHandle(sessionHandle.toTSessionHandle());
-      // TODO: set real configuration map
-      resp.setConfiguration(new HashMap<String, String>());
-      resp.setStatus(OK_STATUS);
-      ThriftCLIServerContext context =
-        (ThriftCLIServerContext)currentServerContext.get();
-      if (context != null) {
-        context.setSessionHandle(sessionHandle);
-      }
-      LOG.info("Restored a session, current sessions: " + sessionCount.incrementAndGet());
-    } catch (Exception e) {
-      LOG.warn("Error restoring session: ", e);
-      resp.setStatus(HiveSQLException.toTStatus(e));
-    }
-    return resp;
-  }
-
   private String getIpAddress() {
     String clientIpAddress;
     // Http transport mode.
@@ -499,24 +474,6 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     return sessionHandle;
   }
 
-  /**
-   * restores a session handle
-   * @param req
-   * @param res
-   * @return
-   * @throws HiveSQLException
-   * @throws LoginException
-   * @throws IOException
-   */
-  SessionHandle getSessionHandle(TRestoreSessionReq req, TRestoreSessionResp res)
-    throws HiveSQLException, LoginException, IOException {
-    TProtocolVersion protocol = getMinVersion(CLIService.SERVER_VERSION,
-      req.getClient_protocol());
-    SessionHandle sessionHandle = cliService.restoreSession(new SessionHandle(req.getSessionHandle()),
-      req.getUsername(), req.getPassword(), req.getConfiguration());
-    res.setServerProtocolVersion(protocol);
-    return sessionHandle;
-  }
 
   private String getDelegationToken(String userName)
       throws HiveSQLException, LoginException, IOException {

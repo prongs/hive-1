@@ -25,7 +25,6 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('')
   print('Functions:')
   print('  TOpenSessionResp OpenSession(TOpenSessionReq req)')
-  print('  TRestoreSessionResp RestoreSession(TRestoreSessionReq req)')
   print('  TCloseSessionResp CloseSession(TCloseSessionReq req)')
   print('  TGetInfoResp GetInfo(TGetInfoReq req)')
   print('  TExecuteStatementResp ExecuteStatement(TExecuteStatementReq req)')
@@ -105,12 +104,6 @@ if cmd == 'OpenSession':
     print('OpenSession requires 1 args')
     sys.exit(1)
   pp.pprint(client.OpenSession(eval(args[0]),))
-
-elif cmd == 'RestoreSession':
-  if len(args) != 1:
-    print('RestoreSession requires 1 args')
-    sys.exit(1)
-  pp.pprint(client.RestoreSession(eval(args[0]),))
 
 elif cmd == 'CloseSession':
   if len(args) != 1:

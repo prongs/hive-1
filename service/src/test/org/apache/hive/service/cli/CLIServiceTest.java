@@ -72,8 +72,6 @@ public abstract class CLIServiceTest {
   public void tearDown() throws Exception {
   }
 
-  abstract void restartService() throws Exception;
-
   @Test
   public void testOpenSession() throws Exception {
     SessionHandle sessionHandle = client.openSession(
@@ -84,19 +82,6 @@ public abstract class CLIServiceTest {
     sessionHandle = client.openSession("tom", "password");
     assertNotNull(sessionHandle);
     client.closeSession(sessionHandle);
-  }
-
-  @Test
-  public void testRestoreSession() throws Exception {
-    SessionHandle handle = openSession(new HashMap<String, String>());
-    restartService();
-    SessionHandle restoredHandle = client.restoreSession(handle, "tom", "password");
-    assertEquals(handle, restoredHandle);
-    // Random operation
-    OperationHandle opHandle = client.executeStatement(handle, "CREATE TABLE TEST_EXEC(ID STRING)", null);
-    client.closeOperation(opHandle);
-    // close session
-    client.closeSession(restoredHandle);
   }
 
   @Test
