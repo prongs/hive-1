@@ -132,7 +132,7 @@ public class HiveSessionImpl implements HiveSession {
     }
     // Set an explicit session name to control the download directory name
     hiveConf.set(ConfVars.HIVESESSIONID.varname,
-        sessionHandle.getHandleIdentifier().toString());
+        this.sessionHandle.getHandleIdentifier().toString());
     // Use thrift transportable formatter
     hiveConf.set(ListSinkOperator.OUTPUT_FORMATTER,
         FetchFormatter.ThriftFormatter.class.getName());
