@@ -44,6 +44,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
+import org.apache.hadoop.hive.ql.CompilationOpContext;
 import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.QueryProperties;
@@ -90,6 +91,7 @@ public abstract class BaseSemanticAnalyzer {
   protected final Logger LOG;
   protected final LogHelper console;
 
+  protected CompilationOpContext cContext;
   protected Context ctx;
   protected HashMap<String, String> idToTableNameMap;
   protected QueryProperties queryProperties;
@@ -779,7 +781,7 @@ public abstract class BaseSemanticAnalyzer {
         throw new SemanticException(ErrorMsg.INVALID_TABLE.getMsg(ast
             .getChild(0)), ite);
       } catch (HiveException e) {
-        throw new SemanticException(ErrorMsg.GENERIC_ERROR.getMsg(ast
+        throw new SemanticException(ErrorMsg.CANNOT_RETRIEVE_TABLE_METADATA.getMsg(ast
             .getChild(childIndex), e.getMessage()), e);
       }
 

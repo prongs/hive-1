@@ -16,6 +16,7 @@ package org.apache.hadoop.hive.llap.daemon.impl;
 
 import static org.mockito.Mockito.mock;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -25,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.llap.daemon.FragmentCompletionHandler;
 import org.apache.hadoop.hive.llap.daemon.KilledTaskHandler;
 import org.apache.hadoop.hive.llap.daemon.rpc.LlapDaemonProtocolProtos;
+import org.apache.hadoop.hive.llap.daemon.rpc.LlapDaemonProtocolProtos.FragmentSpecProto;
 import org.apache.hadoop.hive.llap.daemon.rpc.LlapDaemonProtocolProtos.SubmitWorkRequestProto;
 import org.apache.hadoop.hive.llap.metrics.LlapDaemonExecutorMetrics;
 import org.apache.hadoop.security.Credentials;
@@ -33,6 +35,7 @@ import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezTaskID;
 import org.apache.tez.dag.records.TezVertexID;
+import org.apache.tez.hadoop.shim.DefaultHadoopShim;
 import org.apache.tez.runtime.api.impl.ExecutionContextImpl;
 import org.apache.tez.runtime.task.EndReason;
 import org.apache.tez.runtime.task.TaskRunner2Result;
@@ -48,18 +51,36 @@ public class TaskExecutorTestHelpers {
     SubmitWorkRequestProto
         requestProto = createSubmitWorkRequestProto(fragmentNum, parallelism,
         startTime);
-    MockRequest mockRequest = new MockRequest(requestProto, canFinish, workTime);
+    QueryFragmentInfo queryFragmentInfo = createQueryFragmentInfo(requestProto.getFragmentSpec());
+    MockRequest mockRequest = new MockRequest(requestProto, queryFragmentInfo, canFinish, workTime);
     return mockRequest;
   }
 
   public static TaskExecutorService.TaskWrapper createTaskWrapper(
       SubmitWorkRequestProto request, boolean canFinish, int workTime) {
-    MockRequest mockRequest = new MockRequest(request, canFinish, workTime);
+    QueryFragmentInfo queryFragmentInfo = createQueryFragmentInfo(request.getFragmentSpec());
+    MockRequest mockRequest = new MockRequest(request, queryFragmentInfo, canFinish, workTime);
     TaskExecutorService.TaskWrapper
         taskWrapper = new TaskExecutorService.TaskWrapper(mockRequest, null);
     return taskWrapper;
   }
 
+  public static QueryFragmentInfo createQueryFragmentInfo(FragmentSpecProto fragmentSpecProto) {
+    QueryInfo queryInfo = createQueryInfo();
+    QueryFragmentInfo fragmentInfo =
+        new QueryFragmentInfo(queryInfo, "fakeVertexName", fragmentSpecProto.getFragmentNumber(), 0,
+            fragmentSpecProto);
+    return fragmentInfo;
+  }
+
+  public static QueryInfo createQueryInfo() {
+    QueryIdentifier queryIdentifier = new QueryIdentifier("fake_app_id_string", 1);
+    QueryInfo queryInfo =
+        new QueryInfo(queryIdentifier, "fake_app_id_string", "fake_dag_name", 1, "fakeUser",
+            new ConcurrentHashMap<String, LlapDaemonProtocolProtos.SourceStateProto>(),
+            new String[0], null);
+    return queryInfo;
+  }
 
   public static SubmitWorkRequestProto createSubmitWorkRequestProto(
       int fragmentNumber, int selfAndUpstreamParallelism,
@@ -80,7 +101,7 @@ public class TaskExecutorTestHelpers {
     return SubmitWorkRequestProto
         .newBuilder()
         .setFragmentSpec(
-            LlapDaemonProtocolProtos.FragmentSpecProto
+            FragmentSpecProto
                 .newBuilder()
                 .setAttemptNumber(0)
                 .setDagName("MockDag")
@@ -119,13 +140,13 @@ public class TaskExecutorTestHelpers {
     private boolean shouldSleep = true;
     private final Condition finishedCondition = lock.newCondition();
 
-    public MockRequest(SubmitWorkRequestProto requestProto,
+    public MockRequest(SubmitWorkRequestProto requestProto, QueryFragmentInfo fragmentInfo,
                        boolean canFinish, long workTime) {
-      super(requestProto, mock(QueryFragmentInfo.class), new Configuration(),
+      super(requestProto, fragmentInfo, new Configuration(),
           new ExecutionContextImpl("localhost"), null, new Credentials(), 0, null, null, mock(
               LlapDaemonExecutorMetrics.class),
           mock(KilledTaskHandler.class), mock(
-              FragmentCompletionHandler.class));
+              FragmentCompletionHandler.class), new DefaultHadoopShim());
       this.workTime = workTime;
       this.canFinish = canFinish;
     }

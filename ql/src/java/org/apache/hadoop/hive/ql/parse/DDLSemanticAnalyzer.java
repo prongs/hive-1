@@ -744,6 +744,7 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
     rootTasks.add(TaskFactory.get(new DDLWork(getInputs(), getOutputs(),
       alterTableExchangePartition), conf));
 
+    inputs.add(new ReadEntity(sourceTable));
     outputs.add(new WriteEntity(sourceTable, WriteType.DDL_SHARED));
     outputs.add(new WriteEntity(destTable, WriteType.DDL_SHARED));
   }
@@ -1181,7 +1182,7 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
       Index idx = db.getIndex(tableName, indexName);
     } catch (HiveException e) {
       if (!(e.getCause() instanceof NoSuchObjectException)) {
-        throw new SemanticException(ErrorMsg.GENERIC_ERROR.getMsg("dropping index"), e);
+        throw new SemanticException(ErrorMsg.CANNOT_DROP_INDEX.getMsg("dropping index"), e);
       }
       if (throwException) {
         throw new SemanticException(ErrorMsg.INVALID_INDEX.getMsg(indexName));
@@ -2091,7 +2092,7 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
     String tableNames = null;
 
     if (ast.getChildCount() > 3) {
-      throw new SemanticException(ErrorMsg.GENERIC_ERROR.getMsg());
+      throw new SemanticException(ErrorMsg.INVALID_AST_TREE.getMsg(ast.toStringTree()));
     }
 
     switch (ast.getChildCount()) {
@@ -2147,7 +2148,7 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
     HashMap<String, String> partSpec = null;
     if (children >= 2) {
       if (children > 3) {
-        throw new SemanticException(ErrorMsg.GENERIC_ERROR.getMsg());
+        throw new SemanticException(ErrorMsg.INVALID_AST_TREE.getMsg());
       }
       for (int i = 1; i < children; i++) {
         ASTNode child = (ASTNode) ast.getChild(i);
@@ -2156,7 +2157,8 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
         } else if (child.getToken().getType() == HiveParser.TOK_PARTSPEC) {
           partSpec = getValidatedPartSpec(getTable(tableNames), child, conf, false);
         } else {
-          throw new SemanticException(ErrorMsg.GENERIC_ERROR.getMsg());
+          throw new SemanticException(ErrorMsg.INVALID_AST_TREE.getMsg(child.toStringTree() +
+            " , Invalid token " + child.getToken().getType()));
         }
       }
     }

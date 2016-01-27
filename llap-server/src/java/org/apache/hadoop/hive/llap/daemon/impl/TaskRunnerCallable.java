@@ -51,6 +51,7 @@ import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.TokenCache;
 import org.apache.tez.dag.api.TezConstants;
+import org.apache.tez.hadoop.shim.HadoopShim;
 import org.apache.tez.runtime.api.ExecutionContext;
 import org.apache.tez.runtime.api.impl.TaskSpec;
 import org.apache.tez.runtime.common.objectregistry.ObjectRegistryImpl;
@@ -100,6 +101,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
   private final LlapDaemonExecutorMetrics metrics;
   private final String requestId;
   private final String queryId;
+  private final HadoopShim tezHadoopShim;
   private boolean shouldRunTask = true;
   final Stopwatch runtimeWatch = new Stopwatch();
   final Stopwatch killtimerWatch = new Stopwatch();
@@ -115,7 +117,8 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
                      long memoryAvailable, AMReporter amReporter,
                      ConfParams confParams, LlapDaemonExecutorMetrics metrics,
                      KilledTaskHandler killedTaskHandler,
-                     FragmentCompletionHandler fragmentCompleteHandler) {
+                     FragmentCompletionHandler fragmentCompleteHandler,
+                     HadoopShim tezHadoopShim) {
     this.request = request;
     this.fragmentInfo = fragmentInfo;
     this.conf = conf;
@@ -131,7 +134,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
     // Register with the AMReporter when the callable is setup. Unregister once it starts running.
     if (jobToken != null) {
     this.amReporter.registerTask(request.getAmHost(), request.getAmPort(),
-        request.getUser(), jobToken, null, request.getFragmentSpec().getDagName());
+        request.getUser(), jobToken, fragmentInfo.getQueryInfo().getQueryIdentifier());
     }
     this.metrics = metrics;
     this.requestId = request.getFragmentSpec().getFragmentIdentifierString();
@@ -139,6 +142,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
     this.queryId = request.getFragmentSpec().getDagName();
     this.killedTaskHandler = killedTaskHandler;
     this.fragmentCompletionHanler = fragmentCompleteHandler;
+    this.tezHadoopShim = tezHadoopShim;
   }
 
   public long getStartTime() {
@@ -216,7 +220,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
               serviceConsumerMetadata, envMap, startedInputsMap, taskReporter, executor,
               objectRegistry,
               pid,
-              executionContext, memoryAvailable, false);
+              executionContext, memoryAvailable, false, tezHadoopShim);
         }
       }
       if (taskRunner == null) {
@@ -297,9 +301,8 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
    */
   public void reportTaskKilled() {
     killedTaskHandler
-        .taskKilled(request.getAmHost(), request.getAmPort(), request.getUser(), jobToken, null,
-            taskSpec.getDAGName(),
-            taskSpec.getTaskAttemptID());
+        .taskKilled(request.getAmHost(), request.getAmPort(), request.getUser(), jobToken,
+            fragmentInfo.getQueryInfo().getQueryIdentifier(), taskSpec.getTaskAttemptID());
   }
 
   public boolean canFinish() {
@@ -428,6 +431,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
       HistoryLogger
           .logFragmentEnd(request.getApplicationIdString(), request.getContainerIdString(),
               executionContext.getHostName(), request.getFragmentSpec().getDagName(),
+              fragmentInfo.getQueryInfo().getDagIdentifier(),
               request.getFragmentSpec().getVertexName(),
               request.getFragmentSpec().getFragmentNumber(),
               request.getFragmentSpec().getAttemptNumber(), taskRunnerCallable.threadName,
@@ -445,6 +449,7 @@ public class TaskRunnerCallable extends CallableWithNdc<TaskRunner2Result> {
       HistoryLogger
           .logFragmentEnd(request.getApplicationIdString(), request.getContainerIdString(),
               executionContext.getHostName(), request.getFragmentSpec().getDagName(),
+              fragmentInfo.getQueryInfo().getDagIdentifier(),
               request.getFragmentSpec().getVertexName(),
               request.getFragmentSpec().getFragmentNumber(),
               request.getFragmentSpec().getAttemptNumber(), taskRunnerCallable.threadName,

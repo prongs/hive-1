@@ -436,6 +436,15 @@ public enum ErrorMsg {
   HIVE_GROUPING_SETS_AGGR_NOMAPAGGR_MULTIGBY(10315,
       "Grouping sets aggregations (with rollups or cubes) are not allowed when " +
       "HIVEMULTIGROUPBYSINGLEREDUCER is turned on. Set hive.multigroupby.singlereducer=false if you want to use grouping sets"),
+  CANNOT_RETRIEVE_TABLE_METADATA(10316, "Error while retrieving table metadata"),
+  CANNOT_DROP_INDEX(10317, "Error while dropping index"),
+  INVALID_AST_TREE(10318, "Internal error : Invalid AST"),
+  ERROR_SERIALIZE_METASTORE(10319, "Error while serializing the metastore objects"),
+  IO_ERROR(10320, "Error while peforming IO operation "),
+  ERROR_SERIALIZE_METADATA(10321, "Error while serializing the metadata"),
+  INVALID_LOAD_TABLE_FILE_WORK(10322, "Invalid Load Table Work or Load File Work"),
+  CLASSPATH_ERROR(10323, "Classpath error"),
+  IMPORT_SEMANTIC_ERROR(10324, "Import Semantic Analyzer Error"),
   //========================== 20000 range starts here ========================//
   SCRIPT_INIT_ERROR(20000, "Unable to initialize custom script."),
   SCRIPT_IO_ERROR(20001, "An error occurred while reading or writing to your custom script. "
@@ -503,7 +512,10 @@ public enum ErrorMsg {
           "schema.evolution.columns / schema.evolution.columns.types " +
           "nor the " +
           "columns / columns.types " +
-          "are set.  Table schema information is required to read ACID tables")
+          "are set.  Table schema information is required to read ACID tables"),
+  ACID_TABLES_MUST_BE_READ_WITH_ACID_READER(30021, "An ORC ACID reader required to read ACID tables"),
+  ACID_TABLES_MUST_BE_READ_WITH_HIVEINPUTFORMAT(30022, "Must use HiveInputFormat to read ACID tables " +
+          "(set hive.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat)")
   ;
 
   private int errorCode;

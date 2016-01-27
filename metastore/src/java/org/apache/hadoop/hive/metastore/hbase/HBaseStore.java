@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.common.FileUtils;
+import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.FileMetadataHandler;
 import org.apache.hadoop.hive.metastore.HiveMetaStore;
@@ -273,6 +274,7 @@ public class HBaseStore implements RawStore {
       Table tblCopy = tbl.deepCopy();
       tblCopy.setDbName(HiveStringUtils.normalizeIdentifier(tblCopy.getDbName()));
       tblCopy.setTableName(HiveStringUtils.normalizeIdentifier(tblCopy.getTableName()));
+      normalizeColumnNames(tblCopy);
       getHBase().putTable(tblCopy);
       commit = true;
     } catch (IOException e) {
@@ -281,6 +283,24 @@ public class HBaseStore implements RawStore {
     } finally {
       commitOrRoleBack(commit);
     }
+  }
+
+  private void normalizeColumnNames(Table tbl) {
+    if (tbl.getSd().getCols() != null) {
+      tbl.getSd().setCols(normalizeFieldSchemaList(tbl.getSd().getCols()));
+    }
+    if (tbl.getPartitionKeys() != null) {
+      tbl.setPartitionKeys(normalizeFieldSchemaList(tbl.getPartitionKeys()));
+    }
+  }
+
+  private List<FieldSchema> normalizeFieldSchemaList(List<FieldSchema> fieldschemas) {
+    List<FieldSchema> ret = new ArrayList<>();
+    for (FieldSchema fieldSchema : fieldschemas) {
+      ret.add(new FieldSchema(HiveStringUtils.normalizeIdentifier(fieldSchema.getName()),
+          fieldSchema.getType(), fieldSchema.getComment()));
+    }
+    return ret;
   }
 
   @Override
@@ -1674,8 +1694,22 @@ public class HBaseStore implements RawStore {
     boolean commit = false;
     openTransaction();
     try {
+      //update table properties
+      List<ColumnStatisticsObj> statsObjs = colStats.getStatsObj();
+      List<String> colNames = new ArrayList<>();
+      for (ColumnStatisticsObj statsObj:statsObjs) {
+        colNames.add(statsObj.getColName());
+      }
+      String dbName = colStats.getStatsDesc().getDbName();
+      String tableName = colStats.getStatsDesc().getTableName();
+      Table newTable = getTable(dbName, tableName);
+      Table newTableCopy = newTable.deepCopy();
+      StatsSetupConst.setColumnStatsState(newTableCopy.getParameters(), colNames);
+      getHBase().replaceTable(newTable, newTableCopy);
+
       getHBase().updateStatistics(colStats.getStatsDesc().getDbName(),
           colStats.getStatsDesc().getTableName(), null, colStats);
+
       commit = true;
       return true;
     } catch (IOException e) {
@@ -1687,17 +1721,32 @@ public class HBaseStore implements RawStore {
   }
 
   @Override
-  public boolean updatePartitionColumnStatistics(ColumnStatistics statsObj,
+  public boolean updatePartitionColumnStatistics(ColumnStatistics colStats,
                                                  List<String> partVals) throws
       NoSuchObjectException, MetaException, InvalidObjectException, InvalidInputException {
     boolean commit = false;
     openTransaction();
     try {
-      getHBase().updateStatistics(statsObj.getStatsDesc().getDbName(),
-          statsObj.getStatsDesc().getTableName(), partVals, statsObj);
+      // update partition properties
+      String db_name = colStats.getStatsDesc().getDbName();
+      String tbl_name = colStats.getStatsDesc().getTableName();
+      Partition oldPart = getHBase().getPartition(db_name, tbl_name, partVals);
+      Partition new_partCopy = oldPart.deepCopy();
+      List<String> colNames = new ArrayList<>();
+      List<ColumnStatisticsObj> statsObjs = colStats.getStatsObj();
+      for (ColumnStatisticsObj statsObj : statsObjs) {
+        colNames.add(statsObj.getColName());
+      }
+      StatsSetupConst.setColumnStatsState(new_partCopy.getParameters(), colNames);
+      getHBase().replacePartition(oldPart, new_partCopy,
+          HBaseUtils.getPartitionKeyTypes(getTable(db_name, tbl_name).getPartitionKeys()));
+
+      getHBase().updateStatistics(colStats.getStatsDesc().getDbName(),
+          colStats.getStatsDesc().getTableName(), partVals, colStats);
       // We need to invalidate aggregates that include this partition
-      getHBase().getStatsCache().invalidate(statsObj.getStatsDesc().getDbName(),
-          statsObj.getStatsDesc().getTableName(), statsObj.getStatsDesc().getPartName());
+      getHBase().getStatsCache().invalidate(colStats.getStatsDesc().getDbName(),
+          colStats.getStatsDesc().getTableName(), colStats.getStatsDesc().getPartName());
+
       commit = true;
       return true;
     } catch (IOException e) {

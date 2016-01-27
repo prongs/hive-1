@@ -44,6 +44,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.CachingPrintStream;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.ql.CompilationOpContext;
 import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.DriverContext;
 import org.apache.hadoop.hive.ql.QueryPlan;
@@ -56,6 +57,7 @@ import org.apache.hadoop.hive.ql.exec.TableScanOperator;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.mapjoin.MapJoinMemoryExhaustionException;
+import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.apache.hadoop.hive.ql.io.HiveInputFormat;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.BucketMapJoinContext;
@@ -118,8 +120,9 @@ public class MapredLocalTask extends Task<MapredLocalWork> implements Serializab
   }
 
   @Override
-  public void initialize(HiveConf conf, QueryPlan queryPlan, DriverContext driverContext) {
-    super.initialize(conf, queryPlan, driverContext);
+  public void initialize(HiveConf conf, QueryPlan queryPlan, DriverContext driverContext,
+      CompilationOpContext opContext) {
+    super.initialize(conf, queryPlan, driverContext, opContext);
     job = new JobConf(conf, ExecDriver.class);
     execContext = new ExecMapperContext(job);
     //we don't use the HadoopJobExecHooks for local tasks
@@ -455,6 +458,8 @@ public class MapredLocalTask extends Task<MapredLocalWork> implements Serializab
           jobClone, ts.getNeededColumnIDs(), ts.getNeededColumns());
       // push down filters
       HiveInputFormat.pushFilters(jobClone, ts);
+
+      AcidUtils.setTransactionalTableScan(job, ts.getConf().isAcidTable());
 
       // create a fetch operator
       FetchOperator fetchOp = new FetchOperator(entry.getValue(), jobClone);

@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.slf4j.Logger;
@@ -168,7 +169,7 @@ public class Driver implements CommandProcessor {
 
   @Override
   public void init() {
-    Operator.resetId();
+    // Nothing for now.
   }
 
   /**
@@ -493,7 +494,7 @@ public class Driver implements CommandProcessor {
 
       // initialize FetchTask right here
       if (plan.getFetchTask() != null) {
-        plan.getFetchTask().initialize(conf, plan, null);
+        plan.getFetchTask().initialize(conf, plan, null, ctx.getOpContext());
       }
 
       //do the authorization check
@@ -571,7 +572,7 @@ public class Driver implements CommandProcessor {
       ASTNode astTree) throws IOException {
     String ret = null;
     ExplainTask task = new ExplainTask();
-    task.initialize(conf, plan, null);
+    task.initialize(conf, plan, null, ctx.getOpContext());
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos);
     try {
@@ -596,11 +597,26 @@ public class Driver implements CommandProcessor {
    */
   public static void doAuthorization(BaseSemanticAnalyzer sem, String command)
       throws HiveException, AuthorizationException {
-    HashSet<ReadEntity> inputs = sem.getInputs();
-    HashSet<WriteEntity> outputs = sem.getOutputs();
     SessionState ss = SessionState.get();
     HiveOperation op = ss.getHiveOperation();
     Hive db = sem.getDb();
+
+    Set<ReadEntity> additionalInputs = new HashSet<ReadEntity>();
+    for (Entity e : sem.getInputs()) {
+      if (e.getType() == Entity.Type.PARTITION) {
+        additionalInputs.add(new ReadEntity(e.getTable()));
+      }
+    }
+
+    Set<WriteEntity> additionalOutputs = new HashSet<WriteEntity>();
+    for (Entity e : sem.getOutputs()) {
+      if (e.getType() == Entity.Type.PARTITION) {
+        additionalOutputs.add(new WriteEntity(e.getTable(), WriteEntity.WriteType.DDL_NO_LOCK));
+      }
+    }
+
+    Set<ReadEntity> inputs = Sets.union(sem.getInputs(), additionalInputs);
+    Set<WriteEntity> outputs = Sets.union(sem.getOutputs(), additionalOutputs);
 
     if (ss.isAuthorizationModeV2()) {
       // get mapping of tables to columns used
@@ -798,8 +814,8 @@ public class Driver implements CommandProcessor {
     }
   }
 
-  private static void doAuthorizationV2(SessionState ss, HiveOperation op, HashSet<ReadEntity> inputs,
-      HashSet<WriteEntity> outputs, String command, Map<String, List<String>> tab2cols,
+  private static void doAuthorizationV2(SessionState ss, HiveOperation op, Set<ReadEntity> inputs,
+      Set<WriteEntity> outputs, String command, Map<String, List<String>> tab2cols,
       Map<String, List<String>> updateTab2Cols) throws HiveException {
 
     /* comment for reviewers -> updateTab2Cols needed to be separate from tab2cols because if I
@@ -819,7 +835,7 @@ public class Driver implements CommandProcessor {
   }
 
   private static List<HivePrivilegeObject> getHivePrivObjects(
-      HashSet<? extends Entity> privObjects, Map<String, List<String>> tableName2Cols) {
+      Set<? extends Entity> privObjects, Map<String, List<String>> tableName2Cols) {
     List<HivePrivilegeObject> hivePrivobjs = new ArrayList<HivePrivilegeObject>();
     if(privObjects == null){
       return hivePrivobjs;
@@ -1759,7 +1775,7 @@ public class Driver implements CommandProcessor {
       cxt.incCurJobNo(1);
       console.printInfo("Launching Job " + cxt.getCurJobNo() + " out of " + jobs);
     }
-    tsk.initialize(conf, plan, cxt);
+    tsk.initialize(conf, plan, cxt, ctx.getOpContext());
     TaskResult tskRes = new TaskResult();
     TaskRunner tskRun = new TaskRunner(tsk, tskRes);
 
@@ -1849,7 +1865,7 @@ public class Driver implements CommandProcessor {
         throw new IOException("Error closing the current fetch task", e);
       }
       // FetchTask should not depend on the plan.
-      fetchTask.initialize(conf, null, null);
+      fetchTask.initialize(conf, null, null, ctx.getOpContext());
     } else {
       ctx.resetStream();
       resStream = null;

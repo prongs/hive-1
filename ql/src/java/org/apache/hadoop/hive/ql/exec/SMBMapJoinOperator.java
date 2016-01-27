@@ -34,7 +34,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.ObjectPair;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.CompilationOpContext;
 import org.apache.hadoop.hive.ql.exec.persistence.RowContainer;
+import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.apache.hadoop.hive.ql.io.HiveInputFormat;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.BucketMapJoinContext;
@@ -85,7 +87,13 @@ public class SMBMapJoinOperator extends AbstractMapJoinOperator<SMBJoinDesc> imp
   // performed as a smb join, based on all the tables/partitions being joined.
   private transient boolean convertedAutomaticallySMBJoin = false;
 
-  public SMBMapJoinOperator() {
+  /** Kryo ctor. */
+  protected SMBMapJoinOperator() {
+    super();
+  }
+
+  public SMBMapJoinOperator(CompilationOpContext ctx) {
+    super(ctx);
   }
 
   public SMBMapJoinOperator(AbstractMapJoinOperator<? extends MapJoinDesc> mapJoinOp) {
@@ -196,6 +204,7 @@ public class SMBMapJoinOperator extends AbstractMapJoinOperator<SMBJoinDesc> imp
       // push down filters
       HiveInputFormat.pushFilters(jobClone, ts);
 
+      AcidUtils.setTransactionalTableScan(jobClone, ts.getConf().isAcidTable());
 
       ts.passExecContext(getExecContext());
 

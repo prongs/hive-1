@@ -15,23 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hive.ql.optimizer.calcite;
 
-import org.apache.calcite.plan.Context;
-import org.apache.hadoop.hive.ql.optimizer.calcite.cost.HiveAlgorithmsConf;
+package org.apache.hadoop.hive.ql;
 
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class HiveVolcanoPlannerContext implements Context {
-  private HiveAlgorithmsConf config;
+/**
+ * A subset of compilation context that is passed to operators to get rid of some globals.
+ * Perhaps this should be rolled into main Context; however, some code necessitates storing the
+ * context in the operators for now, so this may not be advisable given how much stuff the main
+ * Context class contains.
+ * For now, only the operator sequence ID lives here.
+ */
+public class CompilationOpContext {
+  private final AtomicInteger opSeqId = new AtomicInteger(0);
 
-  public HiveVolcanoPlannerContext(HiveAlgorithmsConf config) {
-    this.config = config;
-  }
-
-  public <T> T unwrap(Class<T> clazz) {
-    if (clazz.isInstance(config)) {
-      return clazz.cast(config);
-    }
-    return null;
+  public int nextOperatorId() {
+    return opSeqId.getAndIncrement();
   }
 }

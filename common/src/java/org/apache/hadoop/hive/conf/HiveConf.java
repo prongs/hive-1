@@ -36,15 +36,14 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.security.auth.login.LoginException;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience.LimitedPrivate;
 import org.apache.hadoop.hive.conf.Validator.PatternSet;
 import org.apache.hadoop.hive.conf.Validator.RangeValidator;
 import org.apache.hadoop.hive.conf.Validator.RatioValidator;
+import org.apache.hadoop.hive.conf.Validator.SizeValidator;
 import org.apache.hadoop.hive.conf.Validator.StringSet;
 import org.apache.hadoop.hive.conf.Validator.TimeValidator;
 import org.apache.hadoop.hive.shims.Utils;
@@ -971,6 +970,9 @@ public class HiveConf extends Configuration {
     HIVE_SCHEMA_EVOLUTION("hive.exec.schema.evolution", false,
         "Use schema evolution to convert self-describing file format's data to the schema desired by the reader."),
 
+    HIVE_TRANSACTIONAL_TABLE_SCAN("hive.transactional.table.scan", false,
+        "internal usage only -- do transaction (ACID) table scan.", true),
+
     HIVESAMPLERANDOMNUM("hive.sample.seednumber", 0,
         "A number used to percentage sampling. By changing this number, user will change the subsets of data sampled."),
 
@@ -993,6 +995,7 @@ public class HiveConf extends Configuration {
     HIVETESTMODEDUMMYSTATPUB("hive.test.dummystats.publisher", "", "internal variable for test", false),
     HIVETESTCURRENTTIMESTAMP("hive.test.currenttimestamp", null, "current timestamp for test", false),
     HIVETESTMODEROLLBACKTXN("hive.test.rollbacktxn", false, "For testing only.  Will mark every ACID transaction aborted", false),
+    HIVETESTMODEFAILCOMPACTION("hive.test.fail.compaction", false, "For testing only.  Will cause CompactorMR to fail.", false),
 
     HIVEMERGEMAPFILES("hive.merge.mapfiles", true,
         "Merge small files at the end of a map-only job"),
@@ -1571,11 +1574,32 @@ public class HiveConf extends Configuration {
     HIVE_COMPACTOR_ABORTEDTXN_THRESHOLD("hive.compactor.abortedtxn.threshold", 1000,
         "Number of aborted transactions involving a given table or partition that will trigger\n" +
         "a major compaction."),
-
+    
+    COMPACTOR_INITIATOR_FAILED_THRESHOLD("hive.compactor.initiator.failed.compacts.threshold", 2,
+      new RangeValidator(1, 20), "Number of consecutive compaction failures (per table/partition) " +
+      "after which automatic compactions will not be scheduled any more.  Note that this must be less " +
+      "than hive.compactor.history.retention.failed."),
+    
     HIVE_COMPACTOR_CLEANER_RUN_INTERVAL("hive.compactor.cleaner.run.interval", "5000ms",
         new TimeValidator(TimeUnit.MILLISECONDS), "Time between runs of the cleaner thread"),
     COMPACTOR_JOB_QUEUE("hive.compactor.job.queue", "", "Used to specify name of Hadoop queue to which\n" +
       "Compaction jobs will be submitted.  Set to empty string to let Hadoop choose the queue."),
+    
+    COMPACTOR_HISTORY_RETENTION_SUCCEEDED("hive.compactor.history.retention.succeeded", 3,
+      new RangeValidator(0, 100), "Determines how many successful compaction records will be " +
+      "retained in compaction history for a given table/partition."),
+    
+    COMPACTOR_HISTORY_RETENTION_FAILED("hive.compactor.history.retention.failed", 3,
+      new RangeValidator(0, 100), "Determines how many failed compaction records will be " +
+      "retained in compaction history for a given table/partition."),
+    
+    COMPACTOR_HISTORY_RETENTION_ATTEMPTED("hive.compactor.history.retention.attempted", 2,
+      new RangeValidator(0, 100), "Determines how many attempted compaction records will be " +
+      "retained in compaction history for a given table/partition."),
+    
+    COMPACTOR_HISTORY_REAPER_INTERVAL("hive.compactor.history.reaper.interval", "2m",
+      new TimeValidator(TimeUnit.MILLISECONDS), "Determines how often compaction history reaper runs"),
+    
     HIVE_TIMEDOUT_TXN_REAPER_START("hive.timedout.txn.reaper.start", "100s",
       new TimeValidator(TimeUnit.MILLISECONDS), "Time delay of 1st reaper run after metastore start"),
     HIVE_TIMEDOUT_TXN_REAPER_INTERVAL("hive.timedout.txn.reaper.interval", "180s",
@@ -1649,7 +1673,7 @@ public class HiveConf extends Configuration {
     HIVE_AUTHORIZATION_ENABLED("hive.security.authorization.enabled", false,
         "enable or disable the Hive client authorization"),
     HIVE_AUTHORIZATION_MANAGER("hive.security.authorization.manager",
-        "org.apache.hadoop.hive.ql.security.authorization.DefaultHiveAuthorizationProvider",
+        "org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactory",
         "The Hive client authorization manager class name. The user defined authorization class should implement \n" +
         "interface org.apache.hadoop.hive.ql.security.authorization.HiveAuthorizationProvider."),
     HIVE_AUTHENTICATOR_MANAGER("hive.security.authenticator.manager",
@@ -1900,6 +1924,10 @@ public class HiveConf extends Configuration {
     HIVE_SERVER2_TEZ_SESSION_LIFETIME_JITTER("hive.server2.tez.session.lifetime.jitter", "3h",
         new TimeValidator(TimeUnit.HOURS),
         "The jitter for Tez session lifetime; prevents all the sessions from restarting at once."),
+    HIVE_SERVER2_TEZ_SESSION_MAX_INIT_THREADS("hive.server2.tez.sessions.init.threads", 16,
+        "If hive.server2.tez.initialize.default.sessions is enabled, the maximum number of\n" +
+        "threads to use to initialize the default sessions."),
+
 
     // Operation log configuration
     HIVE_SERVER2_LOGGING_OPERATION_ENABLED("hive.server2.logging.operation.enabled", true,
@@ -2260,7 +2288,6 @@ public class HiveConf extends Configuration {
         "Whether to generate the splits locally or in the AM (tez only)"),
     HIVE_TEZ_GENERATE_CONSISTENT_SPLITS("hive.tez.input.generate.consistent.splits", true,
         "Whether to generate consistent split locations when generating splits in the AM"),
-
     HIVE_PREWARM_ENABLED("hive.prewarm.enabled", false, "Enables container prewarm for Tez/Spark (Hadoop 2 only)"),
     HIVE_PREWARM_NUM_CONTAINERS("hive.prewarm.numcontainers", 10, "Controls the number of containers to prewarm for Tez/Spark (Hadoop 2 only)"),
 
@@ -2346,18 +2373,18 @@ public class HiveConf extends Configuration {
         "LLAP IO memory usage; 'cache' (the default) uses data and metadata cache with a\n" +
         "custom off-heap allocator, 'allocator' uses the custom allocator without the caches,\n" +
         "'none' doesn't use either (this mode may result in significant performance degradation)"),
-    LLAP_ALLOCATOR_MIN_ALLOC("hive.llap.io.allocator.alloc.min", 128 * 1024,
+    LLAP_ALLOCATOR_MIN_ALLOC("hive.llap.io.allocator.alloc.min", "128Kb", new SizeValidator(),
         "Minimum allocation possible from LLAP buddy allocator. Allocations below that are\n" +
         "padded to minimum allocation. For ORC, should generally be the same as the expected\n" +
         "compression buffer size, or next lowest power of 2. Must be a power of 2."),
-    LLAP_ALLOCATOR_MAX_ALLOC("hive.llap.io.allocator.alloc.max", 16 * 1024 * 1024,
+    LLAP_ALLOCATOR_MAX_ALLOC("hive.llap.io.allocator.alloc.max", "16Mb", new SizeValidator(),
         "Maximum allocation possible from LLAP buddy allocator. For ORC, should be as large as\n" +
         "the largest expected ORC compression buffer size. Must be a power of 2."),
     LLAP_ALLOCATOR_ARENA_COUNT("hive.llap.io.allocator.arena.count", 8,
         "Arena count for LLAP low-level cache; cache will be allocated in the steps of\n" +
         "(size/arena_count) bytes. This size must be <= 1Gb and >= max allocation; if it is\n" +
         "not the case, an adjusted size will be used. Using powers of 2 is recommended."),
-    LLAP_IO_MEMORY_MAX_SIZE("hive.llap.io.memory.size", 1024L * 1024 * 1024,
+    LLAP_IO_MEMORY_MAX_SIZE("hive.llap.io.memory.size", "1Gb", new SizeValidator(),
         "Maximum size for IO allocator or ORC low-level cache.", "hive.llap.io.cache.orc.size"),
     LLAP_ALLOCATOR_DIRECT("hive.llap.io.allocator.direct", true,
         "Whether ORC low-level cache should use direct allocation."),
@@ -2473,7 +2500,7 @@ public class HiveConf extends Configuration {
        new TimeValidator(TimeUnit.SECONDS),
       "How long to delay before cleaning up query files in LLAP (in seconds, for debugging).",
       "llap.file.cleanup.delay-seconds"),
-    LLAP_DAEMON_SERVICE_HOSTS("hive.llap.daemon.service.hosts", "",
+    LLAP_DAEMON_SERVICE_HOSTS("hive.llap.daemon.service.hosts", null,
       "Explicitly specified hosts to use for LLAP scheduling. Useful for testing. By default,\n" +
       "YARN registry is used.", "llap.daemon.service.hosts"),
     LLAP_DAEMON_SERVICE_REFRESH_INTERVAL("hive.llap.daemon.service.refresh.interval.sec", "60s",
@@ -2483,6 +2510,8 @@ public class HiveConf extends Configuration {
     LLAP_DAEMON_COMMUNICATOR_NUM_THREADS("hive.llap.daemon.communicator.num.threads", 10,
       "Number of threads to use in LLAP task communicator in Tez AM.",
       "llap.daemon.communicator.num.threads"),
+    LLAP_DAEMON_ALLOW_PERMANENT_FNS("hive.llap.daemon.allow.permanent.fns", true,
+        "Whether LLAP daemon should localize the resources for permanent UDFs."),
     LLAP_TASK_SCHEDULER_NODE_REENABLE_MIN_TIMEOUT_MS(
       "hive.llap.task.scheduler.node.reenable.min.timeout.ms", "200ms",
       new TimeValidator(TimeUnit.MILLISECONDS),
@@ -2540,6 +2569,10 @@ public class HiveConf extends Configuration {
       "llap.daemon.service.port"),
     LLAP_DAEMON_WEB_SSL("hive.llap.daemon.web.ssl", false,
       "Whether LLAP daemon web UI should use SSL.", "llap.daemon.service.ssl"),
+    LLAP_CLIENT_CONSISTENT_SPLITS("hive.llap.client.consistent.splits",
+        false,
+        "Whether to setup split locations to match nodes on which llap daemons are running," +
+            " instead of using the locations provided by the split itself"),
 
     SPARK_CLIENT_FUTURE_TIMEOUT("hive.spark.client.future.timeout",
       "60s", new TimeValidator(TimeUnit.SECONDS),
@@ -2935,6 +2968,14 @@ public class HiveConf extends Configuration {
     setTimeVar(this, var, time, outUnit);
   }
 
+  public static long getSizeVar(Configuration conf, ConfVars var) {
+    return toSizeBytes(getVar(conf, var));
+  }
+
+  public long getSizeVar(ConfVars var) {
+    return getSizeVar(this, var);
+  }
+
   private static TimeUnit getDefaultTimeUnit(ConfVars var) {
     TimeUnit inputUnit = null;
     if (var.validator instanceof TimeValidator) {
@@ -2944,11 +2985,16 @@ public class HiveConf extends Configuration {
   }
 
   public static long toTime(String value, TimeUnit inputUnit, TimeUnit outUnit) {
-    String[] parsed = parseTime(value.trim());
+    String[] parsed = parseNumberFollowedByUnit(value.trim());
     return outUnit.convert(Long.valueOf(parsed[0].trim().trim()), unitFor(parsed[1].trim(), inputUnit));
   }
 
-  private static String[] parseTime(String value) {
+  public static long toSizeBytes(String value) {
+    String[] parsed = parseNumberFollowedByUnit(value.trim());
+    return Long.valueOf(parsed[0].trim()) * multiplierFor(parsed[1].trim());
+  }
+
+  private static String[] parseNumberFollowedByUnit(String value) {
     char[] chars = value.toCharArray();
     int i = 0;
     for (; i < chars.length && (chars[i] == '-' || Character.isDigit(chars[i])); i++) {
@@ -2979,6 +3025,25 @@ public class HiveConf extends Configuration {
       return TimeUnit.NANOSECONDS;
     }
     throw new IllegalArgumentException("Invalid time unit " + unit);
+  }
+
+
+  public static long multiplierFor(String unit) {
+    unit = unit.trim().toLowerCase();
+    if (unit.isEmpty() || unit.equals("b") || unit.equals("bytes")) {
+      return 1;
+    } else if (unit.equals("kb")) {
+      return 1024;
+    } else if (unit.equals("mb")) {
+      return 1024*1024;
+    } else if (unit.equals("gb")) {
+      return 1024*1024*1024;
+    } else if (unit.equals("tb")) {
+      return 1024*1024*1024*1024;
+    } else if (unit.equals("pb")) {
+      return 1024*1024*1024*1024*1024;
+    }
+    throw new IllegalArgumentException("Invalid size unit " + unit);
   }
 
   public static String stringFor(TimeUnit timeunit) {
