@@ -204,13 +204,12 @@ public class CLIService extends CompositeService implements ICLIService {
   /**
    * Used to restore session
    */
-  public SessionHandle restoreSession(SessionHandle sessionHandle, String username, String password,
+  public void restoreSession(SessionHandle sessionHandle, String username, String password,
     Map<String, String> configuration)
     throws HiveSQLException {
-    SessionHandle result = sessionManager.restoreSession(sessionHandle, SERVER_VERSION, username, password,
+    sessionManager.restoreSession(sessionHandle, SERVER_VERSION, username, password,
       configuration, false, null);
     LOG.debug(sessionHandle + ": restoreSession()");
-    return result;
   }
 
   /* (non-Javadoc)

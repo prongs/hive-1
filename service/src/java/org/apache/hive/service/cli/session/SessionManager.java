@@ -315,7 +315,7 @@ public class SessionManager extends CompositeService {
         Constructor<?> constructor = clazz.getConstructor(SessionHandle.class, TProtocolVersion.class,
           String.class, String.class, HiveConf.class, String.class);
         session = (HiveSession) constructor.newInstance(sessionHandle, protocol, username, password,
-          hiveConf, TSetIpAddressProcessor.getUserIpAddress());
+          hiveConf, ipAddress);
         } catch (Exception e) {
           throw new HiveSQLException("Cannot initilize session class:" + sessionImplclassName, e);
         }
@@ -353,12 +353,11 @@ public class SessionManager extends CompositeService {
     handleToSession.put(session.getSessionHandle(), session);
     return session;
   }
-  public SessionHandle restoreSession(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
+  public void restoreSession(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
     Map<String, String> sessionConf, boolean withImpersonation, String delegationToken)
     throws HiveSQLException {
-    HiveSession session = createSession(sessionHandle, protocol, username, password, null, sessionConf,
+    createSession(sessionHandle, protocol, username, password, null, sessionConf,
       withImpersonation, delegationToken);
-    return session.getSessionHandle();
   }
   public void closeSession(SessionHandle sessionHandle) throws HiveSQLException {
     HiveSession session = handleToSession.remove(sessionHandle);

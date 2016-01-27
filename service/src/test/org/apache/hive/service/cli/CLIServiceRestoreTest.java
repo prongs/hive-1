@@ -32,8 +32,15 @@ public class CLIServiceRestoreTest {
     SessionHandle session = service.openSession("foo", "bar", null);
     service.stop();
     service = getService();
-    SessionHandle restoredSession = service.restoreSession(session, "foo", "bar", null);
-    Assert.assertEquals(session, restoredSession);
+    try {
+      service.getSessionManager().getSession(session);
+      Assert.fail("session already exists before restore");
+    } catch (HiveSQLException e) {
+      Assert.assertTrue(e.getMessage().contains("Invalid SessionHandle"));
+    }
+    service.restoreSession(session, "foo", "bar", null);
+    Assert.assertNotNull(service.getSessionManager().getSession(session));
+    service.stop();
   }
 
   public CLIService getService() {
