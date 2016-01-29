@@ -43,7 +43,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.hooks.HookUtils;
 import org.apache.hive.service.CompositeService;
-import org.apache.hive.service.auth.TSetIpAddressProcessor;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.SessionHandle;
 import org.apache.hive.service.cli.operation.Operation;
@@ -280,8 +279,9 @@ public class SessionManager extends CompositeService {
     return createSession(null, protocol, username, password, ipAddress, sessionConf,
       withImpersonation, delegationToken).getSessionHandle();
   }
-  public HiveSession createSession(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password, String ipAddress,
-    Map<String, String> sessionConf, boolean withImpersonation, String delegationToken)
+  public HiveSession createSession(SessionHandle sessionHandle, TProtocolVersion protocol, String username,
+    String password, String ipAddress, Map<String, String> sessionConf, boolean withImpersonation,
+    String delegationToken)
     throws HiveSQLException {
 
     HiveSession session;
@@ -308,7 +308,7 @@ public class SessionManager extends CompositeService {
     } else {
       if (sessionImplclassName == null) {
         session = new HiveSessionImpl(sessionHandle, protocol, username, password, hiveConf,
-          TSetIpAddressProcessor.getUserIpAddress());
+          ipAddress);
       } else {
         try {
         Class<?> clazz = Class.forName(sessionImplclassName);
@@ -353,12 +353,7 @@ public class SessionManager extends CompositeService {
     handleToSession.put(session.getSessionHandle(), session);
     return session;
   }
-  public void restoreSession(SessionHandle sessionHandle, TProtocolVersion protocol, String username, String password,
-    Map<String, String> sessionConf, boolean withImpersonation, String delegationToken)
-    throws HiveSQLException {
-    createSession(sessionHandle, protocol, username, password, null, sessionConf,
-      withImpersonation, delegationToken);
-  }
+
   public void closeSession(SessionHandle sessionHandle) throws HiveSQLException {
     HiveSession session = handleToSession.remove(sessionHandle);
     if (session == null) {

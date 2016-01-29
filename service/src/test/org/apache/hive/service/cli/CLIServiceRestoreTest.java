@@ -38,7 +38,7 @@ public class CLIServiceRestoreTest {
     } catch (HiveSQLException e) {
       Assert.assertTrue(e.getMessage().contains("Invalid SessionHandle"));
     }
-    service.restoreSession(session, "foo", "bar", null);
+    service.createSessionWithSessionHandle(session, "foo", "bar", null);
     Assert.assertNotNull(service.getSessionManager().getSession(session));
     service.stop();
   }
