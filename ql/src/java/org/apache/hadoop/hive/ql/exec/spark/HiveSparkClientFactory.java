@@ -27,8 +27,10 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.compress.utils.CharsetNames;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.ql.io.HiveKey;
@@ -66,10 +68,16 @@ public class HiveSparkClientFactory {
 
   public static Map<String, String> initiateSparkConf(HiveConf hiveConf) {
     Map<String, String> sparkConf = new HashMap<String, String>();
+    HBaseConfiguration.addHbaseResources(hiveConf);
 
     // set default spark configurations.
     sparkConf.put("spark.master", SPARK_DEFAULT_MASTER);
-    sparkConf.put("spark.app.name", SPARK_DEFAULT_APP_NAME);
+    final String appNameKey = "spark.app.name";
+    String appName = hiveConf.get(appNameKey);
+    if (appName == null) {
+      appName = SPARK_DEFAULT_APP_NAME;
+    }
+    sparkConf.put(appNameKey, appName);
     sparkConf.put("spark.serializer", SPARK_DEFAULT_SERIALIZER);
     sparkConf.put("spark.kryo.referenceTracking", SPARK_DEFAULT_REFERENCE_TRACKING);
 
@@ -133,7 +141,21 @@ public class HiveSparkClientFactory {
         LOG.info(String.format(
           "load yarn property from hive configuration in %s mode (%s -> %s).",
           sparkMaster, propertyName, value));
+      } else if (propertyName.equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
+        String value = hiveConf.get(propertyName);
+        if (value != null && !value.isEmpty()) {
+          sparkConf.put("spark.hadoop." + propertyName, value);
+        }
+      } else if (propertyName.startsWith("hbase")) {
+        // Add HBase related configuration to Spark because in security mode, Spark needs it
+        // to generate hbase delegation token for Spark. This is a temp solution to deal with
+        // Spark problem.
+        String value = hiveConf.get(propertyName);
+        sparkConf.put("spark.hadoop." + propertyName, value);
+        LOG.info(String.format(
+          "load HBase configuration (%s -> %s).", propertyName, value));
       }
+
       if (RpcConfiguration.HIVE_SPARK_RSC_CONFIGS.contains(propertyName)) {
         String value = RpcConfiguration.getValue(hiveConf, propertyName);
         sparkConf.put(propertyName, value);
@@ -151,6 +173,15 @@ public class HiveSparkClientFactory {
     classes.add(BytesWritable.class.getName());
     classes.add(HiveKey.class.getName());
     sparkConf.put("spark.kryo.classesToRegister", Joiner.on(",").join(classes));
+
+    // set yarn queue name
+    final String sparkQueueNameKey = "spark.yarn.queue";
+    if (sparkMaster.startsWith("yarn") && hiveConf.get(sparkQueueNameKey) == null) {
+      String queueName = hiveConf.get("mapreduce.job.queuename");
+      if (queueName != null) {
+        sparkConf.put(sparkQueueNameKey, queueName);
+      }
+    }
 
     return sparkConf;
   }

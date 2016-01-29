@@ -387,6 +387,7 @@ public class HiveConf extends Configuration {
     // a symbolic name to reference in the Hive source code. Properties with non-null
     // values will override any values set in the underlying Hadoop configuration.
     HADOOPBIN("hadoop.bin.path", findHadoopBinary(), "", true),
+    YARNBIN("yarn.bin.path", findYarnBinary(), "", true),
     HIVE_FS_HAR_IMPL("fs.har.impl", "org.apache.hadoop.hive.shims.HiveHarFileSystem",
         "The implementation for accessing Hadoop Archives. Note that this won't be applicable to Hadoop versions less than 0.20"),
     MAPREDMAXSPLITSIZE(FileInputFormat.SPLIT_MAXSIZE, 256000000L, "", true),
@@ -1264,7 +1265,10 @@ public class HiveConf extends Configuration {
     HIVEPPDRECOGNIZETRANSITIVITY("hive.ppd.recognizetransivity", true,
         "Whether to transitively replicate predicate filters over equijoin conditions."),
     HIVEPPDREMOVEDUPLICATEFILTERS("hive.ppd.remove.duplicatefilters", true,
-        "Whether to push predicates down into storage handlers.  Ignored when hive.optimize.ppd is false."),
+        "During query optimization, filters may be pushed down in the operator tree. \n" +
+        "If this config is true only pushed down filters remain in the operator tree, \n" +
+        "and the original filter is removed. If this config is false, the original filter \n" +
+        "is also left in the operator tree at the original place."),
     HIVEPOINTLOOKUPOPTIMIZER("hive.optimize.point.lookup", true,
          "Whether to transform OR clauses in Filter operators into IN clauses"),
     HIVEPOINTLOOKUPOPTIMIZERMIN("hive.optimize.point.lookup.min", 31,
@@ -2601,6 +2605,11 @@ public class HiveConf extends Configuration {
       "Channel logging level for remote Spark driver.  One of {DEBUG, ERROR, INFO, TRACE, WARN}."),
     SPARK_RPC_SASL_MECHANISM("hive.spark.client.rpc.sasl.mechanisms", "DIGEST-MD5",
       "Name of the SASL mechanism to use for authentication."),
+    SPARK_RPC_SERVER_ADDRESS("hive.spark.client.rpc.server.address", "",
+      "The server address of HiverServer2 host to be used for communication between Hive client and remote Spark driver. " + 
+      "Default is empty, which means the address will be determined in the same way as for hive.server2.thrift.bind.host." +
+      "This is only necessary if the host has mutiple network addresses and if a different network address other than " +
+      "hive.server2.thrift.bind.host is to be used."),
     SPARK_DYNAMIC_PARTITION_PRUNING(
         "hive.spark.dynamic.partition.pruning", false,
         "When dynamic pruning is enabled, joins on partition keys will be processed by writing\n" +
@@ -2791,16 +2800,27 @@ public class HiveConf extends Configuration {
     }
 
     private static String findHadoopBinary() {
+      String val = findHadoopHome();
+      // if can't find hadoop home we can at least try /usr/bin/hadoop
+      val = (val == null ? File.separator + "usr" : val)
+          + File.separator + "bin" + File.separator + "hadoop";
+      // Launch hadoop command file on windows.
+      return val + (Shell.WINDOWS ? ".cmd" : "");
+    }
+
+    private static String findYarnBinary() {
+      String val = findHadoopHome();
+      val = (val == null ? "yarn" : val + File.separator + "bin" + File.separator + "yarn");
+      return val + (Shell.WINDOWS ? ".cmd" : "");
+    }
+
+    private static String findHadoopHome() {
       String val = System.getenv("HADOOP_HOME");
       // In Hadoop 1.X and Hadoop 2.X HADOOP_HOME is gone and replaced with HADOOP_PREFIX
       if (val == null) {
         val = System.getenv("HADOOP_PREFIX");
       }
-      // and if all else fails we can at least try /usr/bin/hadoop
-      val = (val == null ? File.separator + "usr" : val)
-        + File.separator + "bin" + File.separator + "hadoop";
-      // Launch hadoop command file on windows.
-      return val + (Shell.WINDOWS ? ".cmd" : "");
+      return val;
     }
 
     public String getDefaultValue() {
@@ -2920,7 +2940,8 @@ public class HiveConf extends Configuration {
   private boolean isSparkRelatedConfig(String name) {
     boolean result = false;
     if (name.startsWith("spark")) { // Spark property.
-      result = true;
+      // for now we don't support changing spark app name on the fly
+      result = !name.equals("spark.app.name");
     } else if (name.startsWith("yarn")) { // YARN property in Spark on YARN mode.
       String sparkMaster = get("spark.master");
       if (sparkMaster != null &&
