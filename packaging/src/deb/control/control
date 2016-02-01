@@ -1,0 +1,9 @@
+Package: apache-hive
+Version: [[project.version]]
+Section:  misc
+Priority: high
+Architecture: all 
+Depends: sun-java6-jre | java2-runtime
+Maintainer: Apache
+Description: Apache Hive
+Distribution: SNAPSHOT
