@@ -40239,4 +40239,3 @@ class ThriftHiveMetastore_get_change_version_result {
 
 }
 
-
