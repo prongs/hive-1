@@ -104,6 +104,8 @@ public class TaskRunner extends Thread {
         tsk.setException(t);
       }
       t.printStackTrace();
+      OperationLog.getCurrentOperationLog().writeOperationLog("Exception in task runner: ");
+      t.printStackTrace(OperationLog.getCurrentOperationLog().getPrintStream());
     }
     result.setExitVal(exitVal, tsk.getException());
   }
