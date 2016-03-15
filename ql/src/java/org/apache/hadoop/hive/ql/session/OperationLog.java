@@ -43,7 +43,7 @@ public class OperationLog {
     return logFile.getPrintStream();
   }
 
-  public static enum LoggingLevel {
+  public enum LoggingLevel {
     NONE, EXECUTION, PERFORMANCE, VERBOSE, UNKNOWN
   }
 

@@ -343,7 +343,7 @@ public class MapredLocalTask extends Task<MapredLocalWork> implements Serializab
 
       return exitVal;
     } catch (Exception e) {
-      LOG.error("Exception: " + e, e);
+      LOG.error("Exception: ", e);
       return (1);
     } finally {
       if (secureDoAs != null) {
