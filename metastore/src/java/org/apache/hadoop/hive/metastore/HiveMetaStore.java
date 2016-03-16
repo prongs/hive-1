@@ -1508,8 +1508,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
           }
         }
 
-        // tblPath will be null when tbl is a view. We skip the following if block in that case.
-        checkTrashPurgeCombination(tblPath, dbname + "." + name, ifPurge);
+        checkTrashPurgeCombination(tblPath, dbname + "." + name, ifPurge, deleteData && !isExternal);
         // Drop the partitions and get a list of locations which need to be deleted
         partPaths = dropPartitionsAndGetLocations(ms, dbname, name, tblPath,
             tbl.getPartitionKeys(), deleteData && !isExternal);
@@ -1546,15 +1545,20 @@ public class HiveMetaStore extends ThriftHiveMetastore {
      * @param objectName db.table, or db.table.part
      * @param ifPurge if PURGE options is specified
      */
-    private void checkTrashPurgeCombination(Path pathToData, String objectName, boolean ifPurge)
-      throws MetaException {
-      if (!(pathToData != null && !ifPurge)) {//pathToData may be NULL for a view
+    private void checkTrashPurgeCombination(Path pathToData, String objectName, boolean ifPurge,
+        boolean deleteData) throws MetaException {
+      // There is no need to check TrashPurgeCombination in following cases since Purge/Trash
+      // is not applicable:
+      // a) deleteData is false -- drop an external table
+      // b) pathToData is null -- a view
+      // c) ifPurge is true -- force delete without Trash
+      if (!deleteData || pathToData == null || ifPurge) {
         return;
       }
 
       boolean trashEnabled = false;
       try {
-  trashEnabled = 0 < hiveConf.getFloat("fs.trash.interval", -1);
+        trashEnabled = 0 < hiveConf.getFloat("fs.trash.interval", -1);
       } catch(NumberFormatException ex) {
   // nothing to do
       }
@@ -2644,11 +2648,13 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       boolean isArchived = false;
       Path archiveParentDir = null;
       boolean mustPurge = false;
+      boolean isExternalTbl = false;
 
       try {
         ms.openTransaction();
         part = ms.getPartition(db_name, tbl_name, part_vals);
         tbl = get_table_core(db_name, tbl_name);
+        isExternalTbl = isExternal(tbl);
         firePreEvent(new PreDropPartitionEvent(tbl, part, deleteData, this));
         mustPurge = isMustPurge(envContext, tbl);
 
@@ -2661,7 +2667,8 @@ public class HiveMetaStore extends ThriftHiveMetastore {
         if (isArchived) {
           archiveParentDir = MetaStoreUtils.getOriginalLocation(part);
           verifyIsWritablePath(archiveParentDir);
-          checkTrashPurgeCombination(archiveParentDir, db_name + "." + tbl_name + "." + part_vals, mustPurge);
+          checkTrashPurgeCombination(archiveParentDir, db_name + "." + tbl_name + "." + part_vals,
+              mustPurge, deleteData && !isExternalTbl);
         }
         if (!ms.dropPartition(db_name, tbl_name, part_vals)) {
           throw new MetaException("Unable to drop partition");
@@ -2670,13 +2677,14 @@ public class HiveMetaStore extends ThriftHiveMetastore {
         if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
           partPath = new Path(part.getSd().getLocation());
           verifyIsWritablePath(partPath);
-          checkTrashPurgeCombination(partPath, db_name + "." + tbl_name + "." + part_vals, mustPurge);
+          checkTrashPurgeCombination(partPath, db_name + "." + tbl_name + "." + part_vals,
+              mustPurge, deleteData && !isExternalTbl);
         }
       } finally {
         if (!success) {
           ms.rollbackTransaction();
         } else if (deleteData && ((partPath != null) || (archiveParentDir != null))) {
-          if (tbl != null && !isExternal(tbl)) {
+          if (!isExternalTbl) {
             if (mustPurge) {
               LOG.info("dropPartition() will purge " + partPath + " directly, skipping trash.");
             }
@@ -2761,10 +2769,12 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       Table tbl = null;
       List<Partition> parts = null;
       boolean mustPurge = false;
+      boolean isExternalTbl = false;
       try {
         // We need Partition-s for firing events and for result; DN needs MPartition-s to drop.
         // Great... Maybe we could bypass fetching MPartitions by issuing direct SQL deletes.
         tbl = get_table_core(dbName, tblName);
+        isExternalTbl = isExternal(tbl);
         mustPurge = isMustPurge(envContext, tbl);
         int minCount = 0;
         RequestPartsSpec spec = request.getParts();
@@ -2829,13 +2839,15 @@ public class HiveMetaStore extends ThriftHiveMetastore {
           if (MetaStoreUtils.isArchived(part)) {
             Path archiveParentDir = MetaStoreUtils.getOriginalLocation(part);
             verifyIsWritablePath(archiveParentDir);
-            checkTrashPurgeCombination(archiveParentDir, dbName + "." + tblName + "." + part.getValues(), mustPurge);
+            checkTrashPurgeCombination(archiveParentDir, dbName + "." + tblName + "." +
+                part.getValues(), mustPurge, deleteData && !isExternalTbl);
             archToDelete.add(archiveParentDir);
           }
           if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
             Path partPath = new Path(part.getSd().getLocation());
             verifyIsWritablePath(partPath);
-            checkTrashPurgeCombination(partPath, dbName + "." + tblName + "." + part.getValues(), mustPurge);
+            checkTrashPurgeCombination(partPath, dbName + "." + tblName + "." + part.getValues(),
+                mustPurge, deleteData && !isExternalTbl);
             dirsToDelete.add(new PathAndPartValSize(partPath, part.getValues().size()));
           }
         }
@@ -5935,17 +5947,16 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       boolean[] eliminated = new boolean[fileIds.size()];
 
       getMS().getFileMetadataByExpr(fileIds, type, req.getExpr(), metadatas, ppdResults, eliminated);
-      for (int i = 0; i < metadatas.length; ++i) {
-        long fileId = fileIds.get(i);
-        ByteBuffer metadata = metadatas[i];
-        if (metadata == null) continue;
-        metadata = (eliminated[i] || !needMetadata) ? null
-            : handleReadOnlyBufferForThrift(metadata);
+      for (int i = 0; i < fileIds.size(); ++i) {
+        if (!eliminated[i] && ppdResults[i] == null) continue; // No metadata => no ppd.
         MetadataPpdResult mpr = new MetadataPpdResult();
-        ByteBuffer bitset = eliminated[i] ? null : handleReadOnlyBufferForThrift(ppdResults[i]);
-        mpr.setMetadata(metadata);
-        mpr.setIncludeBitset(bitset);
-        result.putToMetadata(fileId, mpr);
+        ByteBuffer ppdResult = eliminated[i] ? null : handleReadOnlyBufferForThrift(ppdResults[i]);
+        mpr.setIncludeBitset(ppdResult);
+        if (needMetadata) {
+          ByteBuffer metadata = eliminated[i] ? null : handleReadOnlyBufferForThrift(metadatas[i]);
+          mpr.setMetadata(metadata);
+        }
+        result.putToMetadata(fileIds.get(i), mpr);
       }
       if (!result.isSetMetadata()) {
         result.setMetadata(EMPTY_MAP_FM2); // Set the required field.
