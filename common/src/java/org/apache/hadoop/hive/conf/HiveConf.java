@@ -323,7 +323,8 @@ public class HiveConf extends Configuration {
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_FILE_CLEANUP_DELAY_SECONDS.varname);
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_SERVICE_HOSTS.varname);
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_SERVICE_REFRESH_INTERVAL.varname);
-    llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_ALLOW_PERMANENT_FNS.varname);
+    llapDaemonVarsSetLocal.add(ConfVars.LLAP_ALLOW_PERMANENT_FNS.varname);
+    llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_DOWNLOAD_PERMANENT_FNS.varname);
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_TASK_SCHEDULER_WAIT_QUEUE_SIZE.varname);
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_WAIT_QUEUE_COMPARATOR_CLASS_NAME.varname);
     llapDaemonVarsSetLocal.add(ConfVars.LLAP_DAEMON_TASK_SCHEDULER_ENABLE_PREEMPTION.varname);
@@ -737,6 +738,13 @@ public class HiveConf extends Configuration {
         "select query has incorrect syntax or something similar inside a transaction, the\n" +
         "entire transaction will fail and fall-back to DataNucleus will not be possible. You\n" +
         "should disable the usage of direct SQL inside transactions if that happens in your case."),
+    METASTORE_DIRECT_SQL_MAX_QUERY_LENGTH("hive.direct.sql.max.query.length", 100, "The maximum\n" +
+        " size of a query string (in KB)."),
+    METASTORE_DIRECT_SQL_MAX_ELEMENTS_IN_CLAUSE("hive.direct.sql.max.elements.in.clause", 1000,
+        "The maximum number of values in a IN clause. Once exceeded, it will be broken into\n" +
+        " multiple OR separated IN clauses."),
+    METASTORE_DIRECT_SQL_MAX_ELEMENTS_VALUES_CLAUSE("hive.direct.sql.max.elements.values.clause",
+        1000, "The maximum number of values in a VALUES clause for INSERT statement."),
     METASTORE_ORM_RETRIEVE_MAPNULLS_AS_EMPTY_STRINGS("hive.metastore.orm.retrieveMapNullsAsEmptyStrings",false,
         "Thrift does not support nulls in maps, so any nulls present in maps retrieved from ORM must " +
         "either be pruned or converted to empty strings. Some backing dbs such as Oracle persist empty strings " +
@@ -2229,6 +2237,15 @@ public class HiveConf extends Configuration {
     HIVE_SERVER2_PLAIN_LDAP_USERFILTER("hive.server2.authentication.ldap.userFilter", null,
         "COMMA-separated list of LDAP usernames (just short names, not full DNs).\n" +
         "For example: hiveuser,impalauser,hiveadmin,hadoopadmin"),
+    HIVE_SERVER2_PLAIN_LDAP_GUIDKEY("hive.server2.authentication.ldap.guidKey", "uid",
+        "LDAP attribute name whose values are unique in this LDAP server.\n" +
+        "For example: uid or CN."),
+    HIVE_SERVER2_PLAIN_LDAP_GROUPMEMBERSHIP_KEY("hive.server2.authentication.ldap.groupMembershipKey", "member",
+        "LDAP attribute name on the user entry that references a group, the user belongs to.\n" +
+        "For example: member, uniqueMember or memberUid"),
+    HIVE_SERVER2_PLAIN_LDAP_GROUPCLASS_KEY("hive.server2.authentication.ldap.groupClassKey", "groupOfNames",
+        "LDAP attribute name on the group entry that is to be used in LDAP group searches.\n" +
+        "For example: group, groupOfNames or groupOfUniqueNames."),
     HIVE_SERVER2_PLAIN_LDAP_CUSTOMLDAPQUERY("hive.server2.authentication.ldap.customLDAPQuery", null,
         "A full LDAP query that LDAP Atn provider uses to execute against LDAP Server.\n" +
         "If this query returns a null resultset, the LDAP Provider fails the Authentication\n" +
@@ -2514,7 +2531,7 @@ public class HiveConf extends Configuration {
         "hive.tez.exec.inplace.progress",
         true,
         "Updates tez job execution progress in-place in the terminal."),
-    LLAP_IO_ENABLED("hive.llap.io.enabled", false, "Whether the LLAP IO layer is enabled."),
+    LLAP_IO_ENABLED("hive.llap.io.enabled", null, "Whether the LLAP IO layer is enabled."),
     LLAP_IO_MEMORY_MODE("hive.llap.io.memory.mode", "cache",
         new StringSet("cache", "allocator", "none"),
         "LLAP IO memory usage; 'cache' (the default) uses data and metadata cache with a\n" +
@@ -2569,6 +2586,8 @@ public class HiveConf extends Configuration {
         "Whether to skip the compile-time check for non-built-in UDFs when deciding whether to\n" +
         "execute tasks in LLAP. Skipping the check allows executing UDFs from pre-localized\n" +
         "jars in LLAP; if the jars are not pre-localized, the UDFs will simply fail to load."),
+    LLAP_ALLOW_PERMANENT_FNS("hive.llap.allow.permanent.fns", true,
+        "Whether LLAP decider should allow permanent UDFs."),
     LLAP_EXECUTION_MODE("hive.llap.execution.mode", "none",
         new StringSet("auto", "none", "all", "map"),
         "Chooses whether query fragments will run in container or in llap"),
@@ -2664,7 +2683,7 @@ public class HiveConf extends Configuration {
     LLAP_DAEMON_COMMUNICATOR_NUM_THREADS("hive.llap.daemon.communicator.num.threads", 10,
       "Number of threads to use in LLAP task communicator in Tez AM.",
       "llap.daemon.communicator.num.threads"),
-    LLAP_DAEMON_ALLOW_PERMANENT_FNS("hive.llap.daemon.allow.permanent.fns", false,
+    LLAP_DAEMON_DOWNLOAD_PERMANENT_FNS("hive.llap.daemon.download.permanent.fns", false,
         "Whether LLAP daemon should localize the resources for permanent UDFs."),
     LLAP_TASK_SCHEDULER_NODE_REENABLE_MIN_TIMEOUT_MS(
       "hive.llap.task.scheduler.node.reenable.min.timeout.ms", "200ms",
