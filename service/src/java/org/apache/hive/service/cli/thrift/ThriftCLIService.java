@@ -21,6 +21,7 @@ package org.apache.hive.service.cli.thrift;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -515,6 +516,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
       ThriftCLIServerContext context =
         (ThriftCLIServerContext)currentServerContext.get();
       if (context != null) {
+        LOG.info("Closing session. Stack Trace: "  + Arrays.toString(Thread.currentThread().getStackTrace()));
         context.setSessionHandle(null);
       }
     } catch (Exception e) {

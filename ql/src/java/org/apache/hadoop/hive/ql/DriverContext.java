@@ -31,12 +31,7 @@ import org.apache.hadoop.hive.ql.plan.MapWork;
 import org.apache.hadoop.hive.ql.plan.ReduceWork;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -130,6 +125,7 @@ public class DriverContext {
    */
   public synchronized void shutdown() {
     LOG.debug("Shutting down query " + ctx.getCmd());
+    LOG.info("stackTrace: " + Arrays.toString(Thread.currentThread().getStackTrace()));
     shutdown = true;
     for (TaskRunner runner : running) {
       if (runner.isRunning()) {
