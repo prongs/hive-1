@@ -163,10 +163,14 @@ public class QueryDisplay {
       setStatusMessage(tTask.getStatusMessage());
       switch (taskState) {
         case RUNNING:
-          beginTime = System.currentTimeMillis();
+          if (beginTime == null) {
+            beginTime = System.currentTimeMillis();
+          }
           break;
         case FINISHED:
-          endTime = System.currentTimeMillis();
+          if (endTime == null) {
+            endTime = System.currentTimeMillis();
+          }
           break;
       }
     }

@@ -185,11 +185,12 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
         SessionHandle sessionHandle = context.getSessionHandle();
         if (sessionHandle != null) {
           LOG.info("Session disconnected without closing properly, close it now");
-          try {
-            cliService.closeSession(sessionHandle);
-          } catch (HiveSQLException e) {
-            LOG.warn("Failed to close session: " + e, e);
-          }
+//          try {
+//            LOG.info("Not closing session.");
+//            cliService.closeSession(sessionHandle);
+//          } catch (HiveSQLException e) {
+//            LOG.warn("Failed to close session: " + e, e);
+//          }
         }
       }
 

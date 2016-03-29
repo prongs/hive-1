@@ -87,6 +87,7 @@ public abstract class Task<T extends Serializable> implements Serializable, Node
 
   public void setStatusMessage(String statusMessage) {
     this.statusMessage = statusMessage;
+    updateStatusInQueryDisplay();
   }
 
   public String getStatusMessage() {
@@ -209,12 +210,16 @@ public abstract class Task<T extends Serializable> implements Serializable, Node
   }
 
   public void setChildTasks(List<Task<? extends Serializable>> childTasks) {
-    this.childTasks = childTasks;
+    this.childTasks = updateQueryDisplay(childTasks);
+  }
+
+  protected <ITERABLE extends Iterable<Task<? extends Serializable>>> ITERABLE updateQueryDisplay(ITERABLE tasks) {
     if (queryDisplay != null) {
-      for (Task<? extends Serializable> task: this.childTasks) {
+      for (Task<? extends Serializable> task: tasks) {
         task.setQueryDisplay(queryDisplay);
       }
     }
+    return tasks;
   }
 
   @Override
