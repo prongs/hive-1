@@ -73,7 +73,7 @@ public class ConditionalTask extends Task<ConditionalWork> implements Serializab
 
   @Override
   public int execute(DriverContext driverContext) {
-    resTasks = updateQueryDisplay(resolver.getTasks(conf, resolverCtx));
+    resTasks = resolver.getTasks(conf, resolverCtx);
     resolved = true;
 
     try {
@@ -177,7 +177,7 @@ public class ConditionalTask extends Task<ConditionalWork> implements Serializab
    *          the listTasks to set
    */
   public void setListTasks(List<Task<? extends Serializable>> listTasks) {
-    this.listTasks = updateQueryDisplay(listTasks);
+    this.listTasks = listTasks;
   }
 
   @Override
@@ -200,6 +200,7 @@ public class ConditionalTask extends Task<ConditionalWork> implements Serializab
   public boolean addDependentTask(Task<? extends Serializable> dependent) {
     boolean ret = false;
     if (getListTasks() != null) {
+      ret = true;
       for (Task<? extends Serializable> tsk : getListTasks()) {
         ret = ret & tsk.addDependentTask(dependent);
       }

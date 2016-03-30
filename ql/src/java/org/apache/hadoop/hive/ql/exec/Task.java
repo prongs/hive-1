@@ -93,6 +93,9 @@ public abstract class Task<T extends Serializable> implements Serializable, Node
   public String getStatusMessage() {
     return statusMessage;
   }
+  public QueryDisplay getQueryDisplay() {
+    return queryDisplay;
+  }
 
   public enum FeedType {
     DYNAMIC_PARTITIONS, // list of dynamic partitions
@@ -210,16 +213,7 @@ public abstract class Task<T extends Serializable> implements Serializable, Node
   }
 
   public void setChildTasks(List<Task<? extends Serializable>> childTasks) {
-    this.childTasks = updateQueryDisplay(childTasks);
-  }
-
-  protected <ITERABLE extends Iterable<Task<? extends Serializable>>> ITERABLE updateQueryDisplay(ITERABLE tasks) {
-    if (queryDisplay != null) {
-      for (Task<? extends Serializable> task: tasks) {
-        task.setQueryDisplay(queryDisplay);
-      }
-    }
-    return tasks;
+    this.childTasks = childTasks;
   }
 
   @Override
