@@ -389,11 +389,10 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
       clientIpAddress = SessionManager.getIpAddress();
     }
     else {
-      // Kerberos
-      if (isKerberosAuthMode()) {
+      if (hiveAuthFactory != null && hiveAuthFactory.isSASLWithKerberizedHadoop()) {
         clientIpAddress = hiveAuthFactory.getIpAddress();
       }
-      // Except kerberos, NOSASL
+      // NOSASL
       else {
         clientIpAddress = TSetIpAddressProcessor.getUserIpAddress();
       }
@@ -414,11 +413,10 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
    */
   private String getUserName(TOpenSessionReq req) throws HiveSQLException, IOException {
     String userName = null;
-    // Kerberos
-    if (isKerberosAuthMode()) {
+    if (hiveAuthFactory != null && hiveAuthFactory.isSASLWithKerberizedHadoop()) {
       userName = hiveAuthFactory.getRemoteUser();
     }
-    // Except kerberos, NOSASL
+    // NOSASL
     if (userName == null) {
       userName = TSetIpAddressProcessor.getUserName();
     }
@@ -805,10 +803,5 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     HiveAuthFactory.verifyProxyAccess(realUser, proxyUser, ipAddress, hiveConf);
     LOG.debug("Verified proxy user: " + proxyUser);
     return proxyUser;
-  }
-
-  private boolean isKerberosAuthMode() {
-    return cliService.getHiveConf().getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)
-        .equalsIgnoreCase(HiveAuthFactory.AuthTypes.KERBEROS.toString());
   }
 }
