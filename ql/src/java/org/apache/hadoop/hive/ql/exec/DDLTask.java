@@ -61,6 +61,7 @@ import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.io.HdfsUtils;
 import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.PartitionDropOptions;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -216,9 +217,6 @@ import org.apache.hadoop.hive.serde2.typeinfo.DecimalTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
-import org.apache.hadoop.hive.shims.HadoopShims;
-import org.apache.hadoop.hive.shims.HadoopShims.HdfsFileStatus;
-import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.tools.HadoopArchives;
@@ -251,6 +249,11 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
   private MetaDataFormatter formatter;
   private final HiveAuthorizationTranslator defaultAuthorizationTranslator = new DefaultHiveAuthorizationTranslator();
+  private Task<? extends Serializable> subtask = null;
+
+  public Task<? extends Serializable> getSubtask() {
+    return subtask;
+  }
 
   @Override
   public boolean requireLock() {
@@ -667,6 +670,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
     // initialize the task and execute
     task.initialize(queryState, getQueryPlan(), driverCxt, opContext);
+    subtask = task;
     int ret = task.execute(driverCxt);
     return ret;
   }
@@ -2388,7 +2392,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
   /**
    * Write a list of the user defined functions to a file.
-   * @param db 
+   * @param db
    *
    * @param showFuncs
    *          are the functions we're interested in.
@@ -2441,7 +2445,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
   /**
    * Write a list of the current locks to a file.
-   * @param db 
+   * @param db
    *
    * @param showLocks
    *          the locks we're interested in.
@@ -2719,7 +2723,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
    /**
    * Lock the table/partition specified
-   * @param db 
+   * @param db
    *
    * @param lockTbl
    *          the table/partition to be locked along with the mode
@@ -2765,7 +2769,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
   /**
    * Unlock the table/partition specified
-   * @param db 
+   * @param db
    *
    * @param unlockTbl
    *          the table/partition to be unlocked
@@ -2781,7 +2785,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
   /**
    * Shows a description of a function.
-   * @param db 
+   * @param db
    *
    * @param descFunc
    *          is the function we are describing
@@ -4173,6 +4177,7 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
       taskExec.initialize(queryState, null, driverCxt, null);
       taskExec.setWork(truncateWork);
       taskExec.setQueryPlan(this.getQueryPlan());
+      subtask = taskExec;
       return taskExec.execute(driverCxt);
     }
 
@@ -4183,15 +4188,13 @@ public class DDLTask extends Task<DDLWork> implements Serializable {
 
     try {
       // this is not transactional
-      HadoopShims shim = ShimLoader.getHadoopShims();
       for (Path location : getLocations(db, table, partSpec)) {
         FileSystem fs = location.getFileSystem(conf);
-        
-        HdfsFileStatus fullFileStatus = shim.getFullFileStatus(conf, fs, location);
+        HdfsUtils.HadoopFileStatus status = new HdfsUtils.HadoopFileStatus(conf, fs, location);
         fs.delete(location, true);
         fs.mkdirs(location);
         try {
-          shim.setFullFileStatus(conf, fullFileStatus, fs, location);
+          HdfsUtils.setFullFileStatus(conf, status, fs, location);
         } catch (Exception e) {
           LOG.warn("Error setting permissions of " + location, e);
         }
