@@ -178,5 +178,4 @@ public class TestQueryDisplay {
     Assert.assertTrue(html.contains(stmt));
     Assert.assertTrue(html.contains("testuser"));
   }
-
 }
