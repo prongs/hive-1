@@ -267,7 +267,7 @@
 
 <property>
   <name>hive.security.authorization.manager</name>
-  <value>org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactoryForTest</value>
+  <value>org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactory</value>
   <description>The Hive client authorization manager class name.</description>
 </property>
 
